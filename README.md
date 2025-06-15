@@ -19,7 +19,7 @@ Curated in vivo data for prediction models and Insilico digital twins.
 ## Proposed Value: 
 
 - A catalogue of well-curated in vivo datasets for drug discovery.
-- For training predictive machine-learning models (Data is King)
+- For training predictive machine-learning models
 - Incentivise the biomedical space to adopt standardised curation and data reporting (Both academia and Industry).
 
 ## Team 
