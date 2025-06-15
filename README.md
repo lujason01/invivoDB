@@ -1,8 +1,9 @@
 # invivoDB: a highly curated database for invivo data for insilico animal digital twins.
 
+![](images/mousemovie1.gif.gif)
+
 ## **What?**
-An application for research animal digital twins. 
-This is intended to be a well-curated database of in vivo experimental data. 
+An application for research animal digital twins. This is intended to be a well-curated database of in vivo experimental data. 
 
 ## **Use Case**
 Curated in vivo data for prediction models and Insilico digital twins.  
