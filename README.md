@@ -23,10 +23,11 @@ Curated in vivo data for prediction models and Insilico digital twins.
 - Incentivise the biomedical space to adopt standardised curation and data reporting (Both academia and Industry).
 
 ## Team 
-Jason Lubega @lujason01
+Jason Lubega @lujason01   
+*I am a novice programmer therefore, I'd need some mentorship and support from experienced devs to maintain and develop this much needed tool in the lifesciences.*
 
 ### Open call to contribute
-We are counting on everyone to making this Database better. 
-Contributors can feature this project on their portfolio.
+This is a project in progress and we are counting on everyone to making this Database better. 
+Contributors can feature this project on their portfolio. 
 
 Cheers from the @invivoDB Team 
