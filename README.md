@@ -26,7 +26,7 @@ Curated in vivo data for prediction models and Insilico digital twins.
 Jason Lubega @lujason01   
 *I am a novice programmer therefore, I'd need some mentorship and support from experienced devs to maintain and develop this much needed tool in the lifesciences.*
 
-### Open call to contribute
+### Contributions
 This is a project in progress and we are counting on everyone to making this Database better. 
 Contributors can feature this project on their portfolio. 
 
