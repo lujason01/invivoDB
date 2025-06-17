@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - InvivoDB{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="bi bi-database me-3"></i>InvivoDB
+                </h1>
+                <p class="lead mb-4">
+                    A highly curated database for in vivo data for in silico animal digital twins.
+                    Advancing life sciences through standardized data curation and ML-ready datasets.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{{ url_for('experiments') }}" class="btn btn-light btn-lg">
+                        <i class="bi bi-flask"></i> Browse Experiments
+                    </a>
+                    <a href="{{ url_for('add_animal') }}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-plus-circle"></i> Add Data
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="bg-white bg-opacity-10 rounded-3 p-4">
+                    <i class="bi bi-graph-up display-1 mb-3 d-block"></i>
+                    <h5>ML-Ready Data</h5>
+                    <p>Standardized, curated datasets for training predictive models</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Statistics Cards -->
+<div class="container mt-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div class="card card-stats h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <i class="bi bi-bug text-primary" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h3 class="card-title mb-1">{{ total_animals }}</h3>
+                    <p class="card-text text-muted">Animals</p>
+                    <a href="{{ url_for('animals') }}" class="btn btn-outline-primary btn-sm">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-stats h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <i class="bi bi-flask text-success" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h3 class="card-title mb-1">{{ total_experiments }}</h3>
+                    <p class="card-text text-muted">Experiments</p>
+                    <a href="{{ url_for('experiments') }}" class="btn btn-outline-success btn-sm">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-stats h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <i class="bi bi-heart-pulse text-danger" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h3 class="card-title mb-1">{{ total_therapies }}</h3>
+                    <p class="card-text text-muted">Therapies</p>
+                    <a href="{{ url_for('therapies') }}" class="btn btn-outline-danger btn-sm">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-stats h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <i class="bi bi-clipboard-data text-info" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h3 class="card-title mb-1">{{ total_assays }}</h3>
+                    <p class="card-text text-muted">Assays</p>
+                    <span class="badge bg-info">Data Points</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity & Species Breakdown -->
+<div class="container mt-5">
+    <div class="row g-4">
+        <!-- Recent Experiments -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Recent Experiments
+                    </h5>
+                    <span class="badge bg-primary">{{ recent_experiments }} in last 30 days</span>
+                </div>
+                <div class="card-body">
+                    {% if recent_exp_list %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Animal</th>
+                                        <th>Species</th>
+                                        <th>Start Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for exp in recent_exp_list %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ exp.title[:50] }}{% if exp.title|length > 50 %}...{% endif %}</strong>
+                                        </td>
+                                        <td>
+                                            <code>{{ exp.animal.accession_number }}</code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary species-badge">
+                                                {{ exp.animal.species.common_name }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ exp.start_date.strftime('%Y-%m-%d') }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('experiment_detail', experiment_id=exp.id) }}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-flask text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3">No experiments yet. Start by adding some data!</p>
+                            <a href="{{ url_for('add_animal') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Add First Animal
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Species Breakdown -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>Species Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if species_breakdown %}
+                        {% for species, count in species_breakdown.items() %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong>{{ species }}</strong>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-primary me-2">{{ count }}</span>
+                                <div class="progress" style="width: 100px; height: 10px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ (count / total_animals * 100) if total_animals > 0 else 0 }}%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-bug text-muted" style="font-size: 2rem;"></i>
+                            <p class="text-muted mt-2">No animals registered yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('add_animal') }}" class="btn btn-primary">
+                            <i class="bi bi-bug"></i> Add Animal
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="alert('Coming soon!')">
+                            <i class="bi bi-flask"></i> Add Experiment
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="alert('Coming soon!')">
+                            <i class="bi bi-heart-pulse"></i> Add Therapy
+                        </button>
+                        <hr>
+                        <a href="{{ url_for('search') }}" class="btn btn-outline-info">
+                            <i class="bi bi-search"></i> Search Database
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="text-center mb-5">Database Features</h2>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 text-center">
+                <div class="card-body">
+                    <i class="bi bi-shield-check text-success" style="font-size: 3rem;"></i>
+                    <h5 class="card-title mt-3">Standardized Curation</h5>
+                    <p class="card-text">
+                        Well-defined data formats and standards for consistent, 
+                        reusable experimental data across different studies.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 border-0 text-center">
+                <div class="card-body">
+                    <i class="bi bi-robot text-primary" style="font-size: 3rem;"></i>
+                    <h5 class="card-title mt-3">ML-Ready Datasets</h5>
+                    <p class="card-text">
+                        Structured data perfect for training machine learning models
+                        and developing predictive algorithms for digital twins.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 border-0 text-center">
+                <div class="card-body">
+                    <i class="bi bi-people text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="card-title mt-3">Collaborative Platform</h5>
+                    <p class="card-text">
+                        Encouraging the biomedical community to adopt standardized
+                        data reporting practices across academia and industry.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-refresh dashboard data every 30 seconds
+    setInterval(function() {
+        fetch('/api/summary')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.error) {
+                    // Update stats (could be enhanced to update dynamically)
+                    console.log('Dashboard data refreshed');
+                }
+            })
+            .catch(error => console.log('Error refreshing data:', error));
+    }, 30000);
+</script>
+{% endblock %}
+

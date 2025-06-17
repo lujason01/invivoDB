@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Add Animal - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-bug me-2"></i>Add New Animal
+                    </h4>
+                    <small class="text-muted">Register a new experimental unit with automatic accession number generation</small>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <!-- Species Selection -->
+                            <div class="col-md-6 mb-3">
+                                <label for="species_id" class="form-label">
+                                    <strong>Species</strong> <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="species_id" name="species_id" required>
+                                    <option value="">Select species...</option>
+                                    {% for species in species_list %}
+                                    <option value="{{ species.id }}">
+                                        {{ species.common_name }} ({{ species.scientific_name }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    Species determines the accession number prefix (e.g., MM for Mus musculus)
+                                </div>
+                            </div>
+                            
+                            <!-- Sex -->
+                            <div class="col-md-6 mb-3">
+                                <label for="sex" class="form-label">Sex</label>
+                                <select class="form-select" id="sex" name="sex">
+                                    <option value="">Select sex...</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Mixed">Mixed</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Strain -->
+                            <div class="col-md-6 mb-3">
+                                <label for="strain" class="form-label">Strain</label>
+                                <input type="text" class="form-control" id="strain" name="strain" 
+                                       placeholder="e.g., C57BL/6, Sprague-Dawley">
+                                <div class="form-text">
+                                    Genetic strain or breed of the animal
+                                </div>
+                            </div>
+                            
+                            <!-- Age at Start -->
+                            <div class="col-md-3 mb-3">
+                                <label for="age_at_start" class="form-label">Age at Start</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="age_at_start" 
+                                           name="age_at_start" step="0.1" min="0" placeholder="8.0">
+                                    <span class="input-group-text">weeks</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Weight at Start -->
+                            <div class="col-md-3 mb-3">
+                                <label for="weight_at_start" class="form-label">Weight at Start</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="weight_at_start" 
+                                           name="weight_at_start" step="0.1" min="0" placeholder="25.5">
+                                    <span class="input-group-text">g</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Genetic Background -->
+                        <div class="mb-3">
+                            <label for="genetic_background" class="form-label">Genetic Background</label>
+                            <textarea class="form-control" id="genetic_background" name="genetic_background" 
+                                      rows="2" placeholder="Additional genetic information, modifications, or background details"></textarea>
+                        </div>
+                        
+                        <!-- Housing Conditions -->
+                        <div class="mb-3">
+                            <label for="housing_conditions" class="form-label">Housing Conditions</label>
+                            <textarea class="form-control" id="housing_conditions" name="housing_conditions" 
+                                      rows="2" placeholder="Environmental conditions, housing setup, diet, etc."></textarea>
+                        </div>
+                        
+                        <!-- Ethical Approval -->
+                        <div class="mb-4">
+                            <label for="ethical_approval" class="form-label">Ethical Approval Number</label>
+                            <input type="text" class="form-control" id="ethical_approval" name="ethical_approval" 
+                                   placeholder="Ethics committee approval reference">
+                            <div class="form-text">
+                                Reference number for ethical approval from relevant committee
+                            </div>
+                        </div>
+                        
+                        <!-- Info Box -->
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Note:</strong> An accession number will be automatically generated based on the selected species 
+                            (e.g., MM-001-2025 for the first Mouse of 2025). This ensures unique identification across the database.
+                        </div>
+                        
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Add Animal
+                            </button>
+                            <a href="{{ url_for('animals') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Animals
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Help Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-question-circle me-2"></i>Guidelines
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Required Information</h6>
+                            <ul class="small">
+                                <li><strong>Species:</strong> Essential for proper categorization and accession numbering</li>
+                                <li>All other fields are optional but recommended for complete records</li>
+                            </ul>
+                            
+                            <h6 class="mt-3">Best Practices</h6>
+                            <ul class="small">
+                                <li>Provide age and weight for baseline measurements</li>
+                                <li>Include strain information for genetic consistency</li>
+                                <li>Document housing conditions for reproducibility</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Accession Number Format</h6>
+                            <div class="bg-light p-3 rounded">
+                                <code>
+                                    <strong>Species Code</strong>-<strong>Sequence</strong>-<strong>Year</strong>
+                                </code>
+                                <br>
+                                <small class="text-muted">
+                                    Examples: MM-001-2025, RN-042-2025
+                                </small>
+                            </div>
+                            
+                            <h6 class="mt-3">Species Codes</h6>
+                            <ul class="small">
+                                <li><code>MM</code> - Mus musculus (Mouse)</li>
+                                <li><code>RN</code> - Rattus norvegicus (Rat)</li>
+                                <li><code>MAC</code> - Macaca mulatta (Macaque)</li>
+                                <li><code>CAN</code> - Canis lupus familiaris (Dog)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Form validation and enhancements
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const speciesSelect = document.getElementById('species_id');
+        
+        // Add form validation
+        form.addEventListener('submit', function(e) {
+            if (!speciesSelect.value) {
+                e.preventDefault();
+                alert('Please select a species before submitting.');
+                speciesSelect.focus();
+                return false;
+            }
+        });
+        
+        // Auto-focus on species selection
+        speciesSelect.focus();
+    });
+</script>
+{% endblock %}
+
