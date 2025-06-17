@@ -1,6 +1,6 @@
 # InvivoDB Prototype
 
-This is a functional prototype of the InvivoDB database system for curating in vivo experimental data for digital animal twins.
+This is a prototype of the InvivoDB database system for curating in vivo experimental data for digital animal twins.
 
 ## 🚀 What's Implemented
 
@@ -123,7 +123,7 @@ Animals are automatically assigned unique accession numbers:
 This prototype demonstrates the core functionality. Future development areas:
 
 - **Backend**: Complete REST API implementation
-- **Frontend**: Enhanced data visualization
+- **Frontend**: Enhanced data visualization 
 - **Data**: Import/export tools for existing datasets
 - **Analysis**: Built-in statistical analysis tools
 - **Integration**: Connections to external databases
