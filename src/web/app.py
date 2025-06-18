@@ -16,7 +16,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from models.database import (
-    Base, Species, Animal, TherapyCategory, Therapy, 
+    db, Species, Animal, TherapyCategory, Therapy, 
     Experiment, AssayType, Assay, AssayMeasurement, 
     ExperimentResult, generate_accession_number, get_species_code
 )
@@ -30,13 +30,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///invivodb.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy
-db = SQLAlchemy()
 db.init_app(app)
 
 # Configure the database to use our models
 with app.app_context():
     # Import models to ensure they're registered with SQLAlchemy
-    Base.metadata.bind = db.engine
     db.create_all()
 
 

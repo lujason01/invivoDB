@@ -11,6 +11,7 @@ pydantic==2.4.2
 # Development and testing
 pytest==7.4.2
 pytest-flask==1.2.0
+pylint==3.0.3
 
 # Optional: For production deployment
 gunicorn==21.2.0

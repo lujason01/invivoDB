@@ -1,242 +1,237 @@
 """
-InvivoDB Database Models
+InvivoDB Database Models (Flask-SQLAlchemy version)
 
 This module defines the core database schema for the invivoDB project.
-It includes models for experimental units (animals), experiments, therapies,
-assays, and related entities.
+All models inherit from db.Model (Flask-SQLAlchemy).
 """
 
 from datetime import datetime
 from typing import Optional, List
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, DateTime, Text, Float, Boolean, ForeignKey, Table
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, Session
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 import uuid
 
-Base = declarative_base()
+db = SQLAlchemy()
 
 # Association table for many-to-many relationship between experiments and therapies
-experiment_therapy_association = Table(
+experiment_therapy_association = db.Table(
     'experiment_therapy',
-    Base.metadata,
-    Column('experiment_id', Integer, ForeignKey('experiments.id')),
-    Column('therapy_id', Integer, ForeignKey('therapies.id'))
+    db.Column('experiment_id', db.Integer, db.ForeignKey('experiments.id')),
+    db.Column('therapy_id', db.Integer, db.ForeignKey('therapies.id'))
 )
 
 # Association table for many-to-many relationship between animals and assays
-animal_assay_association = Table(
+animal_assay_association = db.Table(
     'animal_assay',
-    Base.metadata,
-    Column('animal_id', Integer, ForeignKey('animals.id')),
-    Column('assay_id', Integer, ForeignKey('assays.id'))
+    db.Column('animal_id', db.Integer, db.ForeignKey('animals.id')),
+    db.Column('assay_id', db.Integer, db.ForeignKey('assays.id'))
 )
 
-
-class Species(Base):
+class Species(db.Model):
     """Species model for categorizing experimental animals"""
     __tablename__ = 'species'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    common_name = Column(String(100), nullable=False)  # e.g., "Mouse", "Rat"
-    scientific_name = Column(String(200), nullable=False)  # e.g., "Mus musculus"
-    taxonomy_id = Column(String(50))  # NCBI Taxonomy ID
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    common_name = db.Column(db.String(100), nullable=False)  # e.g., "Mouse", "Rat"
+    scientific_name = db.Column(db.String(200), nullable=False)  # e.g., "Mus musculus"
+    taxonomy_id = db.Column(db.String(50))  # NCBI Taxonomy ID
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    animals = relationship("Animal", back_populates="species")
+    animals = db.relationship("Animal", back_populates="species")
 
 
-class Animal(Base):
+class Animal(db.Model):
     """Experimental unit model - represents individual animals"""
     __tablename__ = 'animals'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    accession_number = Column(String(50), unique=True, nullable=False)  # e.g., "MM-001-2024"
-    species_id = Column(Integer, ForeignKey('species.id'), nullable=False)
-    strain = Column(String(100))  # e.g., "C57BL/6", "Sprague-Dawley"
-    age_at_start = Column(Float)  # Age in weeks
-    weight_at_start = Column(Float)  # Weight in grams
-    sex = Column(String(10))  # "Male", "Female", "Mixed"
-    genetic_background = Column(Text)  # Additional genetic information
-    housing_conditions = Column(Text)  # Housing and environmental conditions
-    ethical_approval = Column(String(100))  # Ethics committee approval number
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    accession_number = db.Column(db.String(50), unique=True, nullable=False)  # e.g., "MM-001-2024"
+    species_id = db.Column(db.Integer, db.ForeignKey('species.id'), nullable=False)
+    strain = db.Column(db.String(100))  # e.g., "C57BL/6", "Sprague-Dawley"
+    age_at_start = db.Column(db.Float)  # Age in weeks
+    weight_at_start = db.Column(db.Float)  # Weight in grams
+    sex = db.Column(db.String(10))  # "Male", "Female", "Mixed"
+    genetic_background = db.Column(db.Text)  # Additional genetic information
+    housing_conditions = db.Column(db.Text)  # Housing and environmental conditions
+    ethical_approval = db.Column(db.String(100))  # Ethics committee approval number
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    species = relationship("Species", back_populates="animals")
-    experiments = relationship("Experiment", back_populates="animal")
-    assays = relationship("Assay", secondary=animal_assay_association, back_populates="animals")
+    species = db.relationship("Species", back_populates="animals")
+    experiments = db.relationship("Experiment", back_populates="animal")
+    assays = db.relationship("Assay", secondary=animal_assay_association, back_populates="animals")
 
 
-class TherapyCategory(Base):
+class TherapyCategory(db.Model):
     """Categories for different types of therapies"""
     __tablename__ = 'therapy_categories'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)  # e.g., "Gene Therapy", "Immunocytokines"
-    description = Column(Text)
-    mechanism_of_action = Column(String(200))  # MOA classification
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(100), nullable=False)  # e.g., "Gene Therapy", "Immunocytokines"
+    description = db.Column(db.Text)
+    mechanism_of_action = db.Column(db.String(200))  # MOA classification
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    therapies = relationship("Therapy", back_populates="category")
+    therapies = db.relationship("Therapy", back_populates="category")
 
 
-class Therapy(Base):
+class Therapy(db.Model):
     """Therapy/Treatment model"""
     __tablename__ = 'therapies'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(200), nullable=False)
-    category_id = Column(Integer, ForeignKey('therapy_categories.id'), nullable=False)
-    vector_type = Column(String(100))  # For gene therapy vectors
-    dosage = Column(String(100))  # Dosage information
-    administration_route = Column(String(100))  # IV, IM, oral, etc.
-    description = Column(Text)
-    molecular_target = Column(String(200))  # Target protein/pathway
-    compound_id = Column(String(100))  # External compound database ID
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(200), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('therapy_categories.id'), nullable=False)
+    vector_type = db.Column(db.String(100))  # For gene therapy vectors
+    dosage = db.Column(db.String(100))  # Dosage information
+    administration_route = db.Column(db.String(100))  # IV, IM, oral, etc.
+    description = db.Column(db.Text)
+    molecular_target = db.Column(db.String(200))  # Target protein/pathway
+    compound_id = db.Column(db.String(100))  # External compound database ID
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    category = relationship("TherapyCategory", back_populates="therapies")
-    experiments = relationship("Experiment", secondary=experiment_therapy_association, back_populates="therapies")
+    category = db.relationship("TherapyCategory", back_populates="therapies")
+    experiments = db.relationship("Experiment", secondary=experiment_therapy_association, back_populates="therapies")
 
 
-class Experiment(Base):
+class Experiment(db.Model):
     """Experiment model - represents individual experiments on animals"""
     __tablename__ = 'experiments'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(300), nullable=False)
-    animal_id = Column(Integer, ForeignKey('animals.id'), nullable=False)
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime)
-    duration_days = Column(Integer)  # Calculated field
-    study_design = Column(String(100))  # "Randomized", "Controlled", etc.
-    primary_endpoint = Column(String(200))
-    secondary_endpoints = Column(Text)
-    inclusion_criteria = Column(Text)
-    exclusion_criteria = Column(Text)
-    statistical_method = Column(String(100))
-    sample_size = Column(Integer)
-    power_analysis = Column(Text)
-    blinding = Column(Boolean, default=False)
-    randomization = Column(Boolean, default=False)
-    control_group = Column(String(100))
-    notes = Column(Text)
-    publication_doi = Column(String(100))  # Associated publication
-    data_availability = Column(String(50))  # "Public", "Restricted", "Private"
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(300), nullable=False)
+    animal_id = db.Column(db.Integer, db.ForeignKey('animals.id'), nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime)
+    duration_days = db.Column(db.Integer)  # Calculated field
+    study_design = db.Column(db.String(100))  # "Randomized", "Controlled", etc.
+    primary_endpoint = db.Column(db.String(200))
+    secondary_endpoints = db.Column(db.Text)
+    inclusion_criteria = db.Column(db.Text)
+    exclusion_criteria = db.Column(db.Text)
+    statistical_method = db.Column(db.String(100))
+    sample_size = db.Column(db.Integer)
+    power_analysis = db.Column(db.Text)
+    blinding = db.Column(db.Boolean, default=False)
+    randomization = db.Column(db.Boolean, default=False)
+    control_group = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    publication_doi = db.Column(db.String(100))  # Associated publication
+    data_availability = db.Column(db.String(50))  # "Public", "Restricted", "Private"
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    animal = relationship("Animal", back_populates="experiments")
-    therapies = relationship("Therapy", secondary=experiment_therapy_association, back_populates="experiments")
-    assays = relationship("Assay", back_populates="experiment")
-    results = relationship("ExperimentResult", back_populates="experiment")
+    animal = db.relationship("Animal", back_populates="experiments")
+    therapies = db.relationship("Therapy", secondary=experiment_therapy_association, back_populates="experiments")
+    assays = db.relationship("Assay", back_populates="experiment")
+    results = db.relationship("ExperimentResult", back_populates="experiment")
 
 
-class AssayType(Base):
+class AssayType(db.Model):
     """Types of assays/tests performed"""
     __tablename__ = 'assay_types'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)  # e.g., "Blood Chemistry", "Histology"
-    category = Column(String(100))  # "Biochemical", "Molecular", "Behavioral"
-    description = Column(Text)
-    standard_protocol = Column(Text)  # Reference to standard protocol
-    units = Column(String(50))  # Standard units for measurements
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(100), nullable=False)  # e.g., "Blood Chemistry", "Histology"
+    category = db.Column(db.String(100))  # "Biochemical", "Molecular", "Behavioral"
+    description = db.Column(db.Text)
+    standard_protocol = db.Column(db.Text)  # Reference to standard protocol
+    units = db.Column(db.String(50))  # Standard units for measurements
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    assays = relationship("Assay", back_populates="assay_type")
+    assays = db.relationship("Assay", back_populates="assay_type")
 
 
-class Assay(Base):
+class Assay(db.Model):
     """Individual assay/test performed on animals"""
     __tablename__ = 'assays'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    experiment_id = Column(Integer, ForeignKey('experiments.id'), nullable=False)
-    assay_type_id = Column(Integer, ForeignKey('assay_types.id'), nullable=False)
-    timepoint = Column(String(50))  # "Baseline", "Day 7", "End of study"
-    timepoint_hours = Column(Float)  # Hours from start of experiment
-    protocol_deviation = Column(Text)  # Any deviations from standard protocol
-    operator = Column(String(100))  # Person who performed the assay
-    equipment = Column(String(200))  # Equipment used
-    batch_id = Column(String(50))  # For reagent batch tracking
-    quality_control_passed = Column(Boolean, default=True)
-    notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    experiment_id = db.Column(db.Integer, db.ForeignKey('experiments.id'), nullable=False)
+    assay_type_id = db.Column(db.Integer, db.ForeignKey('assay_types.id'), nullable=False)
+    timepoint = db.Column(db.String(50))  # "Baseline", "Day 7", "End of study"
+    timepoint_hours = db.Column(db.Float)  # Hours from start of experiment
+    protocol_deviation = db.Column(db.Text)  # Any deviations from standard protocol
+    operator = db.Column(db.String(100))  # Person who performed the assay
+    equipment = db.Column(db.String(200))  # Equipment used
+    batch_id = db.Column(db.String(50))  # For reagent batch tracking
+    quality_control_passed = db.Column(db.Boolean, default=True)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    experiment = relationship("Experiment", back_populates="assays")
-    assay_type = relationship("AssayType", back_populates="assays")
-    animals = relationship("Animal", secondary=animal_assay_association, back_populates="assays")
-    measurements = relationship("AssayMeasurement", back_populates="assay")
+    experiment = db.relationship("Experiment", back_populates="assays")
+    assay_type = db.relationship("AssayType", back_populates="assays")
+    animals = db.relationship("Animal", secondary=animal_assay_association, back_populates="assays")
+    measurements = db.relationship("AssayMeasurement", back_populates="assay")
 
 
-class AssayMeasurement(Base):
+class AssayMeasurement(db.Model):
     """Individual measurements from assays"""
     __tablename__ = 'assay_measurements'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    assay_id = Column(Integer, ForeignKey('assays.id'), nullable=False)
-    parameter_name = Column(String(100), nullable=False)  # e.g., "Glucose", "Weight"
-    value = Column(Float)
-    unit = Column(String(50))
-    reference_range_min = Column(Float)
-    reference_range_max = Column(Float)
-    is_normal = Column(Boolean)
-    detection_limit = Column(Float)
-    below_detection_limit = Column(Boolean, default=False)
-    dilution_factor = Column(Float, default=1.0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    assay_id = db.Column(db.Integer, db.ForeignKey('assays.id'), nullable=False)
+    parameter_name = db.Column(db.String(100), nullable=False)  # e.g., "Glucose", "Weight"
+    value = db.Column(db.Float)
+    unit = db.Column(db.String(50))
+    reference_range_min = db.Column(db.Float)
+    reference_range_max = db.Column(db.Float)
+    is_normal = db.Column(db.Boolean)
+    detection_limit = db.Column(db.Float)
+    below_detection_limit = db.Column(db.Boolean, default=False)
+    dilution_factor = db.Column(db.Float, default=1.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    assay = relationship("Assay", back_populates="measurements")
+    assay = db.relationship("Assay", back_populates="measurements")
 
 
-class ExperimentResult(Base):
+class ExperimentResult(db.Model):
     """Overall results and conclusions from experiments"""
     __tablename__ = 'experiment_results'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    experiment_id = Column(Integer, ForeignKey('experiments.id'), nullable=False)
-    primary_outcome = Column(Text)
-    secondary_outcomes = Column(Text)
-    statistical_significance = Column(Boolean)
-    p_value = Column(Float)
-    effect_size = Column(Float)
-    confidence_interval = Column(String(100))
-    adverse_events = Column(Text)
-    mortality_rate = Column(Float)  # Percentage
-    efficacy_score = Column(Float)  # Standardized efficacy measure
-    conclusions = Column(Text)
-    limitations = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    experiment_id = db.Column(db.Integer, db.ForeignKey('experiments.id'), nullable=False)
+    primary_outcome = db.Column(db.Text)
+    secondary_outcomes = db.Column(db.Text)
+    statistical_significance = db.Column(db.Boolean)
+    p_value = db.Column(db.Float)
+    effect_size = db.Column(db.Float)
+    confidence_interval = db.Column(db.String(100))
+    adverse_events = db.Column(db.Text)
+    mortality_rate = db.Column(db.Float)  # Percentage
+    efficacy_score = db.Column(db.Float)  # Standardized efficacy measure
+    conclusions = db.Column(db.Text)
+    limitations = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    experiment = relationship("Experiment", back_populates="results")
+    experiment = db.relationship("Experiment", back_populates="results")
 
 
-class DataFile(Base):
+class DataFile(db.Model):
     """Files associated with experiments (raw data, images, etc.)"""
     __tablename__ = 'data_files'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    experiment_id = Column(Integer, ForeignKey('experiments.id'), nullable=False)
-    filename = Column(String(255), nullable=False)
-    file_type = Column(String(50))  # "CSV", "Image", "Video", etc.
-    file_size = Column(Integer)  # Size in bytes
-    file_path = Column(String(500))  # Path to file storage
-    checksum = Column(String(64))  # For data integrity
-    description = Column(Text)
-    is_processed = Column(Boolean, default=False)
-    processing_notes = Column(Text)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    experiment_id = db.Column(db.Integer, db.ForeignKey('experiments.id'), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    file_type = db.Column(db.String(50))  # "CSV", "Image", "Video", etc.
+    file_size = db.Column(db.Integer)  # Size in bytes
+    file_path = db.Column(db.String(500))  # Path to file storage
+    checksum = db.Column(db.String(64))  # For data integrity
+    description = db.Column(db.Text)
+    is_processed = db.Column(db.Boolean, default=False)
+    processing_notes = db.Column(db.Text)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Note: We'll add relationship to experiment when needed
 
@@ -248,7 +243,7 @@ def generate_accession_number(species_code: str, year: int, sequence: int) -> st
 
 def create_tables(engine):
     """Create all tables in the database"""
-    Base.metadata.create_all(engine)
+    db.create_all(bind=engine)
 
 
 def get_species_code(scientific_name: str) -> str:
