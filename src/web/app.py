@@ -39,8 +39,14 @@ with app.app_context():
 
 
 @app.route('/')
-def index():
-    """Home page with database overview"""
+def landing():
+    """Application landing page with a prominent search bar."""
+    return render_template('landing.html')
+
+
+@app.route('/dashboard')
+def dashboard():
+    """Home page with database overview (formerly the index)."""
     try:
         # Get summary statistics
         total_animals = Animal.query.count()

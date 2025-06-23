@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to InvivoDB{% endblock %}
+
+{% block content %}
+<style>
+    .landing-page .card {
+        background-color: rgba(128, 128, 128, 0.1) !important;
+        backdrop-filter: blur(5px);
+    }
+    
+    .landing-page .btn-primary,
+    .landing-page .btn-success {
+        background-color: #5DBEA3 !important;
+        border-color: #5DBEA3 !important;
+    }
+    
+    .landing-page .btn-primary:hover,
+    .landing-page .btn-success:hover {
+        background-color: #4da892 !important;
+        border-color: #4da892 !important;
+    }
+    
+    .landing-page .btn-outline-secondary:hover {
+        background-color: #5DBEA3 !important;
+        border-color: #5DBEA3 !important;
+    }
+</style>
+
+<div class="container landing-page" style="min-height: 100vh; display: flex; flex-direction: column;">
+    <!-- Main Content Section (3/4 height) -->
+    <div class="flex-grow-1 d-flex align-items-center justify-content-center" style="min-height: 75vh;">
+        <div class="text-center">
+            <h1 class="display-3 fw-bold">InvivoDB</h1>
+            <p class="lead my-4">
+                A highly curated in vivo database for in silico animal digital twins.
+            </p>
+            
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <form class="d-flex" method="GET" action="{{ url_for('search') }}">
+                        <input class="form-control form-control-lg me-2" type="search" 
+                               name="q" placeholder="Search experiments by title, animal, or species..." 
+                               value="{{ request.args.get('q', '') }}">
+                        <button class="btn btn-primary btn-lg" type="submit">
+                            Search
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="mt-4 d-flex gap-3 justify-content-center">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-grid-1x2"></i> Go to Dashboard
+                </a>
+                <a href="{{ url_for('add_animal') }}" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Contribute
+                </a>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Features Section (1/4 height) -->
+    <div class="container" style="min-height: 25vh;">
+        <div class="row">
+            <div class="col-12">
+                <h3 class="text-center mb-4">Database Features</h3>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 text-center">
+                    <div class="card-body py-3">
+                        <i class="bi bi-shield-check text-success" style="font-size: 2rem;"></i>
+                        <h6 class="fw-bold">Standardized Curation</h6>
+                        <p class="mb-0">
+                            Well-defined data formats and standards for consistent, 
+                            reusable experimental data across different studies.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 text-center">
+                    <div class="card-body py-3">
+                        <i class="bi bi-robot text-primary" style="font-size: 2rem;"></i>
+                        <h6 class="fw-bold">ML-Ready Datasets</h6>
+                        <p class="mb-0">
+                            Structured and standardized datasets 
+                            ready for training predictive models and driving new discoveries.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 text-center">
+                    <div class="card-body py-3">
+                        <i class="bi bi-people text-warning" style="font-size: 2rem;"></i>
+                        <h6 class="fw-bold">Collaborative Platform</h6>
+                        <p class="mb-0">
+                            Encouraging the biomedical community to adopt standardized
+                            data reporting practices across academia and industry.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
