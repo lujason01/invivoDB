@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Add Experiment - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0 fw-bold">
+                        <i class="bi bi-flask me-2"></i>Add New Experiment
+                    </h4>
+                    <small class="text-muted">Register a new experiment and mass-enter animals</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="title" class="form-label"><strong>Experiment Title</strong> <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required maxlength="300">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="end_date" class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="ongoing" name="ongoing">
+                                    <label class="form-check-label" for="ongoing">
+                                        Ongoing Study
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Experiment description, goals, etc."></textarea>
+                        </div>
+                        <hr>
+                        <h5>Animal Group Entry</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="species_id" class="form-label"><strong>Species</strong> <span class="text-danger">*</span></label>
+                                <select class="form-select" id="species_id" name="species_id" required>
+                                    <option value="">Select species...</option>
+                                    {% for species in species_list %}
+                                    <option value="{{ species.id }}">{{ species.common_name }} ({{ species.scientific_name }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="strain" class="form-label">Strain</label>
+                                <input type="text" class="form-control" id="strain" name="strain" placeholder="e.g., C57BL/6">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="age_at_start" class="form-label">Age at Start</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="age_at_start" name="age_at_start" step="0.1" min="0" placeholder="8.0">
+                                    <span class="input-group-text">weeks</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="weight_at_start" class="form-label">Weight at Start</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="weight_at_start" name="weight_at_start" step="0.1" min="0" placeholder="25.5">
+                                    <span class="input-group-text">g</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="genetic_background" class="form-label">Genetic Background</label>
+                                <input type="text" class="form-control" id="genetic_background" name="genetic_background" placeholder="e.g., KO, WT, etc.">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="housing_conditions" class="form-label">Housing Conditions</label>
+                            <textarea class="form-control" id="housing_conditions" name="housing_conditions" rows="2" placeholder="Environmental conditions, diet, etc."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ethical_approval" class="form-label">Ethical Approval Number</label>
+                            <input type="text" class="form-control" id="ethical_approval" name="ethical_approval" placeholder="Ethics committee approval reference">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="num_males" class="form-label">Number of Males</label>
+                                <input type="number" class="form-control" id="num_males" name="num_males" min="0" value="0">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="num_females" class="form-label">Number of Females</label>
+                                <input type="number" class="form-control" id="num_females" name="num_females" min="0" value="0">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="num_intersex" class="form-label">Number of Intersex</label>
+                                <input type="number" class="form-control" id="num_intersex" name="num_intersex" min="0" value="0">
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Note:</strong> Animals will be registered and linked to this experiment. Accession numbers are auto-generated.
+                        </div>
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Add Experiment
+                            </button>
+                            <a href="{{ url_for('experiments') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Experiments
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ongoingCheckbox = document.getElementById('ongoing');
+        const endDateInput = document.getElementById('end_date');
+        
+        // Handle ongoing study checkbox
+        ongoingCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                endDateInput.disabled = true;
+                endDateInput.value = '';
+            } else {
+                endDateInput.disabled = false;
+            }
+        });
+        
+        // Set default start date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('start_date').value = today;
+    });
+</script>
+{% endblock %} 
