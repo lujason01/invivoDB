@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Assay Details - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Assay Information -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-clipboard-data"></i> {{ assay.assay_type.name }}
+                        </h4>
+                        <a href="{{ url_for('add_measurement', assay_id=assay.id) }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add Measurement
+                        </a>
+                    </div>
+                    <p class="text-muted mb-0">
+                        Experiment: <strong>{{ assay.experiment.title }}</strong><br>
+                        Animal: <code>{{ assay.experiment.animal.accession_number }}</code>
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Assay Details</h6>
+                            <p><strong>Timepoint:</strong> {{ assay.timepoint or 'Not specified' }}</p>
+                            <p><strong>Hours from Start:</strong> {{ assay.timepoint_hours or 'Not specified' }}</p>
+                            <p><strong>Operator:</strong> {{ assay.operator or 'Not specified' }}</p>
+                            <p><strong>Equipment:</strong> {{ assay.equipment or 'Not specified' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Quality Control</h6>
+                            <p>
+                                <strong>QC Status:</strong> 
+                                {% if assay.quality_control_passed %}
+                                <span class="badge bg-success">Passed</span>
+                                {% else %}
+                                <span class="badge bg-danger">Failed</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Batch ID:</strong> {{ assay.batch_id or 'Not specified' }}</p>
+                            <p><strong>Protocol Deviations:</strong> {{ assay.protocol_deviation or 'None' }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if assay.notes %}
+                    <hr>
+                    <h6>Notes</h6>
+                    <p>{{ assay.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Measurements -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Measurements ({{ measurements|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if measurements %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Value</th>
+                                    <th>Unit</th>
+                                    <th>Reference Range</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for measurement in measurements %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ measurement.parameter_name }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if measurement.below_detection_limit %}
+                                        <span class="text-muted">&lt; {{ measurement.detection_limit }}</span>
+                                        {% else %}
+                                        {{ measurement.value or 'N/A' }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if measurement.unit %}
+                                        <code>{{ measurement.unit }}</code>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if measurement.reference_range_min and measurement.reference_range_max %}
+                                        {{ measurement.reference_range_min }} - {{ measurement.reference_range_max }}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if measurement.is_normal is not none %}
+                                            {% if measurement.is_normal %}
+                                            <span class="badge bg-success">Normal</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">Abnormal</span>
+                                            {% endif %}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                onclick="showMeasurementDetails({{ measurement.id }})">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-graph-up text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No measurements yet</h5>
+                        <p class="text-muted">Add measurements to this assay to record experimental data.</p>
+                        <a href="{{ url_for('add_measurement', assay_id=assay.id) }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add First Measurement
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Assay Type Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Assay Type Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Category:</strong> {{ assay.assay_type.category or 'Not specified' }}</p>
+                    <p><strong>Standard Units:</strong> {{ assay.assay_type.units or 'Not specified' }}</p>
+                    
+                    {% if assay.assay_type.description %}
+                    <hr>
+                    <h6>Description</h6>
+                    <p>{{ assay.assay_type.description }}</p>
+                    {% endif %}
+                    
+                    {% if assay.assay_type.standard_protocol %}
+                    <hr>
+                    <h6>Standard Protocol</h6>
+                    <pre class="bg-light p-2 rounded small">{{ assay.assay_type.standard_protocol }}</pre>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('add_measurement', assay_id=assay.id) }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add Measurement
+                        </a>
+                        <a href="{{ url_for('experiment_detail', experiment_id=assay.experiment.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Experiment
+                        </a>
+                        <a href="{{ url_for('assay_types') }}" class="btn btn-outline-info">
+                            <i class="bi bi-clipboard-data"></i> Browse Assay Types
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Measurement Details Modal -->
+<div class="modal fade" id="measurementModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Measurement Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="measurementModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showMeasurementDetails(measurementId) {
+    // This would load measurement details via AJAX
+    // For now, just show a placeholder
+    document.getElementById('measurementModalBody').innerHTML = `
+        <p>Detailed information for measurement ID ${measurementId}</p>
+        <p class="text-muted">This would show comprehensive measurement details including:</p>
+        <ul>
+            <li>Raw value and processed value</li>
+            <li>Quality control information</li>
+            <li>Statistical analysis</li>
+            <li>Historical trends</li>
+        </ul>
+    `;
+    new bootstrap.Modal(document.getElementById('measurementModal')).show();
+}
+</script>
+{% endblock %} 

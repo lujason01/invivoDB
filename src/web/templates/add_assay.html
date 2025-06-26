@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Add Assay - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> Add Assay to Experiment
+                    </h4>
+                    <p class="text-muted mb-0">
+                        Experiment: <strong>{{ experiment.title }}</strong><br>
+                        Animal: <code>{{ experiment.animal.accession_number }}</code>
+                    </p>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row g-3">
+                            <!-- Assay Type Selection -->
+                            <div class="col-md-6">
+                                <label for="assay_type_id" class="form-label">Assay Type *</label>
+                                <select class="form-select" id="assay_type_id" name="assay_type_id" required>
+                                    <option value="">Select Assay Type</option>
+                                    {% for assay_type in assay_types %}
+                                    <option value="{{ assay_type.id }}" 
+                                            data-category="{{ assay_type.category }}"
+                                            data-units="{{ assay_type.units }}">
+                                        {{ assay_type.name }}
+                                        {% if assay_type.category %} ({{ assay_type.category }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    <a href="{{ url_for('add_assay_type') }}" target="_blank">
+                                        <i class="bi bi-plus-circle"></i> Create new assay type
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Timepoint -->
+                            <div class="col-md-6">
+                                <label for="timepoint" class="form-label">Timepoint</label>
+                                <input type="text" class="form-control" id="timepoint" name="timepoint" 
+                                       placeholder="e.g., Baseline, Day 7, End of study">
+                            </div>
+                            
+                            <!-- Timepoint Hours -->
+                            <div class="col-md-6">
+                                <label for="timepoint_hours" class="form-label">Timepoint (Hours)</label>
+                                <input type="number" class="form-control" id="timepoint_hours" name="timepoint_hours" 
+                                       step="0.1" placeholder="Hours from experiment start">
+                            </div>
+                            
+                            <!-- Operator -->
+                            <div class="col-md-6">
+                                <label for="operator" class="form-label">Operator</label>
+                                <input type="text" class="form-control" id="operator" name="operator" 
+                                       placeholder="Person who performed the assay">
+                            </div>
+                            
+                            <!-- Equipment -->
+                            <div class="col-md-6">
+                                <label for="equipment" class="form-label">Equipment Used</label>
+                                <input type="text" class="form-control" id="equipment" name="equipment" 
+                                       placeholder="e.g., Beckman Coulter, Olympus microscope">
+                            </div>
+                            
+                            <!-- Batch ID -->
+                            <div class="col-md-6">
+                                <label for="batch_id" class="form-label">Batch ID</label>
+                                <input type="text" class="form-control" id="batch_id" name="batch_id" 
+                                       placeholder="Reagent batch tracking">
+                            </div>
+                            
+                            <!-- Quality Control -->
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="quality_control_passed" 
+                                           name="quality_control_passed" checked>
+                                    <label class="form-check-label" for="quality_control_passed">
+                                        Quality Control Passed
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Protocol Deviation -->
+                            <div class="col-12">
+                                <label for="protocol_deviation" class="form-label">Protocol Deviations</label>
+                                <textarea class="form-control" id="protocol_deviation" name="protocol_deviation" rows="2"
+                                          placeholder="Any deviations from the standard protocol"></textarea>
+                            </div>
+                            
+                            <!-- Notes -->
+                            <div class="col-12">
+                                <label for="notes" class="form-label">Notes</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3"
+                                          placeholder="Additional notes about this assay"></textarea>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('experiment_detail', experiment_id=experiment.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Experiment
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-warning me-2">
+                                    <i class="bi bi-arrow-clockwise"></i> Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Create Assay
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Assay Type Info Panel -->
+            <div class="card mt-4" id="assayTypeInfo" style="display: none;">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Assay Type Information
+                    </h6>
+                </div>
+                <div class="card-body" id="assayTypeInfoContent">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show assay type information when selected
+document.getElementById('assay_type_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const infoPanel = document.getElementById('assayTypeInfo');
+    const infoContent = document.getElementById('assayTypeInfoContent');
+    
+    if (this.value) {
+        const category = selectedOption.dataset.category;
+        const units = selectedOption.dataset.units;
+        
+        infoContent.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Category:</strong> ${category || 'Not specified'}</p>
+                    <p><strong>Standard Units:</strong> ${units || 'Not specified'}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Next Steps:</strong></p>
+                    <ul class="small">
+                        <li>Fill in the timepoint information</li>
+                        <li>Add operator and equipment details</li>
+                        <li>After creating the assay, add measurements</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        infoPanel.style.display = 'block';
+    } else {
+        infoPanel.style.display = 'none';
+    }
+});
+
+// Auto-suggest timepoint based on hours
+document.getElementById('timepoint_hours').addEventListener('input', function() {
+    const hours = parseFloat(this.value);
+    const timepointField = document.getElementById('timepoint');
+    
+    if (!isNaN(hours)) {
+        if (hours === 0) {
+            timepointField.value = 'Baseline';
+        } else if (hours === 24) {
+            timepointField.value = 'Day 1';
+        } else if (hours === 168) {
+            timepointField.value = 'Week 1';
+        } else if (hours % 24 === 0) {
+            const days = hours / 24;
+            timepointField.value = `Day ${days}`;
+        }
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const assayTypeId = document.getElementById('assay_type_id').value;
+    if (!assayTypeId) {
+        e.preventDefault();
+        alert('Please select an assay type');
+        return false;
+    }
+});
+</script>
+{% endblock %} 

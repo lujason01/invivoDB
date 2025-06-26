@@ -138,7 +138,7 @@ class AssayType(db.Model):
     __tablename__ = 'assay_types'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(100), nullable=False)  # e.g., "Blood Chemistry", "Histology"
+    name = db.Column(db.String(100), nullable=False, unique=True)  # e.g., "Blood Chemistry", "Histology"
     category = db.Column(db.String(100))  # "Biochemical", "Molecular", "Behavioral"
     description = db.Column(db.Text)
     standard_protocol = db.Column(db.Text)  # Reference to standard protocol

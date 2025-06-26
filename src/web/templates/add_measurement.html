@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Add Measurement - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> Add Measurement
+                    </h4>
+                    <p class="text-muted mb-0">
+                        Assay: <strong>{{ assay.assay_type.name }}</strong><br>
+                        Experiment: <strong>{{ assay.experiment.title }}</strong>
+                    </p>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row g-3">
+                            <!-- Parameter Name -->
+                            <div class="col-md-6">
+                                <label for="parameter_name" class="form-label">Parameter Name *</label>
+                                <input type="text" class="form-control" id="parameter_name" name="parameter_name" 
+                                       required placeholder="e.g., Glucose, Weight, Cell Count">
+                                <div class="form-text">
+                                    <a href="#" onclick="showParameterSuggestions()">
+                                        <i class="bi bi-lightbulb"></i> View common parameters for this assay type
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Value -->
+                            <div class="col-md-6">
+                                <label for="value" class="form-label">Value</label>
+                                <input type="number" class="form-control" id="value" name="value" 
+                                       step="any" placeholder="Numeric value">
+                            </div>
+                            
+                            <!-- Unit -->
+                            <div class="col-md-6">
+                                <label for="unit" class="form-label">Unit</label>
+                                <input type="text" class="form-control" id="unit" name="unit" 
+                                       placeholder="e.g., mg/dL, ng/mL, %">
+                                <div class="form-text">Standard unit for this measurement</div>
+                            </div>
+                            
+                            <!-- Detection Limit -->
+                            <div class="col-md-6">
+                                <label for="detection_limit" class="form-label">Detection Limit</label>
+                                <input type="number" class="form-control" id="detection_limit" name="detection_limit" 
+                                       step="any" placeholder="Lower limit of detection">
+                            </div>
+                            
+                            <!-- Reference Range -->
+                            <div class="col-md-6">
+                                <label for="reference_range_min" class="form-label">Reference Range (Min)</label>
+                                <input type="number" class="form-control" id="reference_range_min" name="reference_range_min" 
+                                       step="any" placeholder="Lower normal limit">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="reference_range_max" class="form-label">Reference Range (Max)</label>
+                                <input type="number" class="form-control" id="reference_range_max" name="reference_range_max" 
+                                       step="any" placeholder="Upper normal limit">
+                            </div>
+                            
+                            <!-- Dilution Factor -->
+                            <div class="col-md-6">
+                                <label for="dilution_factor" class="form-label">Dilution Factor</label>
+                                <input type="number" class="form-control" id="dilution_factor" name="dilution_factor" 
+                                       step="0.1" value="1.0" min="0">
+                                <div class="form-text">Factor applied to the sample (default: 1.0)</div>
+                            </div>
+                            
+                            <!-- Below Detection Limit -->
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="below_detection_limit" 
+                                           name="below_detection_limit">
+                                    <label class="form-check-label" for="below_detection_limit">
+                                        Value is below detection limit
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('assay_detail', assay_id=assay.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Assay
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-warning me-2">
+                                    <i class="bi bi-arrow-clockwise"></i> Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Add Measurement
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Parameter Suggestions Panel -->
+            <div class="card mt-4" id="parameterSuggestions" style="display: none;">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb"></i> Common Parameters for {{ assay.assay_type.name }}
+                    </h6>
+                </div>
+                <div class="card-body" id="parameterSuggestionsContent">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parameter Suggestion Modal -->
+<div class="modal fade" id="parameterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Parameter</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="parameterList">
+                    <!-- Parameters will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load parameter suggestions for this assay type
+function showParameterSuggestions() {
+    const assayTypeId = {{ assay.assay_type.id }};
+    const suggestionsPanel = document.getElementById('parameterSuggestions');
+    const suggestionsContent = document.getElementById('parameterSuggestionsContent');
+    
+    fetch(`/api/assay_parameters?assay_type_id=${assayTypeId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                let html = '<div class="row">';
+                data.forEach(param => {
+                    html += `
+                        <div class="col-md-6 mb-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" 
+                                    onclick="selectParameter('${param.parameter_name}', '${param.unit || ''}')">
+                                <strong>${param.parameter_name}</strong>
+                                ${param.unit ? `<br><small>${param.unit}</small>` : ''}
+                            </button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                suggestionsContent.innerHTML = html;
+                suggestionsPanel.style.display = 'block';
+            } else {
+                suggestionsContent.innerHTML = '<p class="text-muted">No previous parameters found for this assay type.</p>';
+                suggestionsPanel.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading parameters:', error);
+            suggestionsContent.innerHTML = '<p class="text-danger">Error loading parameter suggestions.</p>';
+            suggestionsPanel.style.display = 'block';
+        });
+}
+
+// Select a parameter from suggestions
+function selectParameter(parameterName, unit) {
+    document.getElementById('parameter_name').value = parameterName;
+    if (unit) {
+        document.getElementById('unit').value = unit;
+    }
+    document.getElementById('parameterSuggestions').style.display = 'none';
+}
+
+// Auto-calculate if value is normal based on reference range
+function updateNormalStatus() {
+    const value = parseFloat(document.getElementById('value').value);
+    const min = parseFloat(document.getElementById('reference_range_min').value);
+    const max = parseFloat(document.getElementById('reference_range_max').value);
+    
+    if (!isNaN(value) && !isNaN(min) && !isNaN(max)) {
+        const isNormal = value >= min && value <= max;
+        // You could add visual feedback here
+        console.log(`Value ${value} is ${isNormal ? 'normal' : 'abnormal'}`);
+    }
+}
+
+// Add event listeners
+document.getElementById('value').addEventListener('input', updateNormalStatus);
+document.getElementById('reference_range_min').addEventListener('input', updateNormalStatus);
+document.getElementById('reference_range_max').addEventListener('input', updateNormalStatus);
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const parameterName = document.getElementById('parameter_name').value.trim();
+    if (parameterName.length < 2) {
+        e.preventDefault();
+        alert('Parameter name must be at least 2 characters long');
+        return false;
+    }
+    
+    const value = document.getElementById('value').value;
+    const belowLimit = document.getElementById('below_detection_limit').checked;
+    
+    if (!value && !belowLimit) {
+        e.preventDefault();
+        alert('Please enter a value or check "below detection limit"');
+        return false;
+    }
+});
+</script>
+{% endblock %} 
