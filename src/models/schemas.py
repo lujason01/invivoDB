@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator
 from enum import Enum
+import re
 
 
 class SexEnum(str, Enum):
@@ -81,12 +82,15 @@ class AnimalBase(BaseSchema):
 
 
 class AnimalCreate(AnimalBase):
-    accession_number: Optional[str] = Field(None, max_length=50, description="Auto-generated if not provided")
+    accession_number: Optional[str] = Field(None, max_length=15, description="Auto-generated if not provided")
     
     @validator('accession_number')
     def validate_accession_number(cls, v):
-        if v and not v.match(r'^[A-Z]{2,3}-\d{3}-\d{4}$'):
-            raise ValueError('Accession number must follow format: XX-###-YYYY')
+        if v:
+            # Import the validation function from database module
+            from models.database import validate_accession_number
+            if not validate_accession_number(v):
+                raise ValueError('Accession number must follow format: SPECIES_CODE + YEAR + SEQUENCE + CHECKSUM (e.g., MM2025000001A5)')
         return v
 
 

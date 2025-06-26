@@ -18,7 +18,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from models.database import (
     db, Species, Animal, TherapyCategory, Therapy, 
     Experiment, AssayType, Assay, AssayMeasurement, 
-    ExperimentResult, generate_accession_number, get_species_code
+    ExperimentResult, generate_accession_number, get_species_code, 
+    validate_accession_number, parse_accession_number
 )
 
 # Initialize Flask app
@@ -199,25 +200,29 @@ def add_animal():
                 flash('Invalid species selected', 'error')
                 return redirect(url_for('add_animal'))
             
-            # Get next sequence number for this species
-            last_animal = (Animal.query
-                          .filter_by(species_id=species_id)
-                          .order_by(Animal.id.desc())
-                          .first())
-            
-            sequence = 1
-            if last_animal:
-                # Extract sequence from last accession number
-                parts = last_animal.accession_number.split('-')
-                if len(parts) >= 2:
-                    sequence = int(parts[1]) + 1
-            
             species_code = get_species_code(species.scientific_name)
-            accession_number = generate_accession_number(species_code, datetime.now().year, sequence)
+            current_year = datetime.now().year
+            
+            # Find the next sequence number for this species and year
+            last_animal = Animal.query.filter(
+                Animal.accession_number.like(f"{species_code}{current_year}%")
+            ).order_by(Animal.accession_number.desc()).first()
+            
+            if last_animal:
+                # Parse the last accession number to get the sequence
+                try:
+                    parsed = parse_accession_number(last_animal.accession_number)
+                    sequence = parsed['sequence'] + 1
+                except ValueError:
+                    # Fallback: start from 1 if parsing fails
+                    sequence = 1
+            else:
+                sequence = 1
+            
+            accession_number = generate_accession_number(species_code, current_year, sequence)
             
             # Create new animal
             animal = Animal(
-                accession_number=accession_number,
                 species_id=species_id,
                 strain=strain,
                 age_at_start=age_at_start,
@@ -225,18 +230,20 @@ def add_animal():
                 sex=sex,
                 genetic_background=genetic_background,
                 housing_conditions=housing_conditions,
-                ethical_approval=ethical_approval
+                ethical_approval=ethical_approval,
+                accession_number=accession_number,
             )
             
             db.session.add(animal)
             db.session.commit()
             
             flash(f'Animal {accession_number} added successfully!', 'success')
-            return redirect(url_for('animal_detail', animal_id=animal.id))
+            return redirect(url_for('animals'))
             
         except Exception as e:
             db.session.rollback()
             flash(f'Error adding animal: {str(e)}', 'error')
+            return redirect(url_for('add_animal'))
     
     # GET request - show form
     species_list = Species.query.all()
@@ -305,79 +312,74 @@ def api_summary():
 
 @app.route('/add_experiment', methods=['GET', 'POST'])
 def add_experiment():
-    """Add a new experiment and (optionally) mass entry of animals."""
+    """Add a new experiment to the database"""
     if request.method == 'POST':
         try:
             title = request.form.get('title')
-            start_date = request.form.get('start_date')
-            end_date = request.form.get('end_date')
-            ongoing = request.form.get('ongoing') == 'on'
+            animal_id = request.form.get('animal_id', type=int)
+            start_date_str = request.form.get('start_date')
+            end_date_str = request.form.get('end_date')
+            study_design = request.form.get('study_design')
+            primary_endpoint = request.form.get('primary_endpoint')
+            secondary_endpoints = request.form.get('secondary_endpoints')
+            inclusion_criteria = request.form.get('inclusion_criteria')
+            exclusion_criteria = request.form.get('exclusion_criteria')
+            statistical_method = request.form.get('statistical_method')
+            sample_size = request.form.get('sample_size', type=int)
+            power_analysis = request.form.get('power_analysis')
+            blinding = request.form.get('blinding') == 'on'
+            randomization = request.form.get('randomization') == 'on'
+            control_group = request.form.get('control_group')
             notes = request.form.get('notes')
-            species_id = request.form.get('species_id', type=int)
-            strain = request.form.get('strain')
-            age_at_start = request.form.get('age_at_start', type=float)
-            weight_at_start = request.form.get('weight_at_start', type=float)
-            genetic_background = request.form.get('genetic_background')
-            housing_conditions = request.form.get('housing_conditions')
-            ethical_approval = request.form.get('ethical_approval')
-            num_males = request.form.get('num_males', type=int)
-            num_females = request.form.get('num_females', type=int)
-            num_intersex = request.form.get('num_intersex', type=int)
-
-            # Create animals first if numbers provided
-            animals = []
-            for sex, count in [('Male', num_males), ('Female', num_females), ('Intersex', num_intersex)]:
-                for _ in range(count or 0):
-                    species = Species.query.get(species_id)
-                    if not species:
-                        continue
-                    last_animal = (Animal.query
-                        .filter_by(species_id=species_id)
-                        .order_by(Animal.id.desc())
-                        .first())
-                    sequence = 1
-                    if last_animal:
-                        parts = last_animal.accession_number.split('-')
-                        if len(parts) >= 2:
-                            sequence = int(parts[1]) + 1
-                    species_code = get_species_code(species.scientific_name)
-                    accession_number = generate_accession_number(species_code, datetime.now().year, sequence)
-                    animal = Animal(
-                        accession_number=accession_number,
-                        species_id=species_id,
-                        strain=strain,
-                        age_at_start=age_at_start,
-                        weight_at_start=weight_at_start,
-                        sex=sex,
-                        genetic_background=genetic_background,
-                        housing_conditions=housing_conditions,
-                        ethical_approval=ethical_approval
-                    )
-                    db.session.add(animal)
-                    db.session.flush()
-                    animals.append(animal)
-
-            # Create experiment for each animal
-            experiments = []
-            for animal in animals:
-                experiment = Experiment(
-                    title=title,
-                    animal_id=animal.id,
-                    start_date=datetime.strptime(start_date, '%Y-%m-%d'),
-                    end_date=datetime.strptime(end_date, '%Y-%m-%d') if end_date and not ongoing else None,
-                    notes=notes
-                )
-                db.session.add(experiment)
-                experiments.append(experiment)
-
+            publication_doi = request.form.get('publication_doi')
+            data_availability = request.form.get('data_availability', 'Private')
+            
+            # Parse dates
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if start_date_str else None
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if end_date_str else None
+            
+            # Calculate duration
+            duration_days = None
+            if start_date and end_date:
+                duration_days = (end_date - start_date).days
+            
+            # Create new experiment
+            experiment = Experiment(
+                title=title,
+                animal_id=animal_id,
+                start_date=start_date,
+                end_date=end_date,
+                duration_days=duration_days,
+                study_design=study_design,
+                primary_endpoint=primary_endpoint,
+                secondary_endpoints=secondary_endpoints,
+                inclusion_criteria=inclusion_criteria,
+                exclusion_criteria=exclusion_criteria,
+                statistical_method=statistical_method,
+                sample_size=sample_size,
+                power_analysis=power_analysis,
+                blinding=blinding,
+                randomization=randomization,
+                control_group=control_group,
+                notes=notes,
+                publication_doi=publication_doi,
+                data_availability=data_availability
+            )
+            
+            db.session.add(experiment)
             db.session.commit()
-            flash(f'Experiment "{title}" and {len(animals)} animals added successfully!', 'success')
-            return redirect(url_for('experiment_detail', experiment_id=experiments[0].id) if experiments else url_for('experiments'))
+            
+            flash(f'Experiment "{title}" added successfully!', 'success')
+            return redirect(url_for('experiments'))
+            
         except Exception as e:
             db.session.rollback()
             flash(f'Error adding experiment: {str(e)}', 'error')
-    species_list = Species.query.all()
-    return render_template('add_experiment.html', species_list=species_list)
+            return redirect(url_for('add_experiment'))
+    
+    # GET request - show form
+    animals_list = Animal.query.join(Species).all()
+    return render_template('add_experiment.html', animals_list=animals_list)
 
 
 # Error handlers
