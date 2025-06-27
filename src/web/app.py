@@ -298,13 +298,63 @@ def api_summary():
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         recent_experiments = Experiment.query.filter(Experiment.created_at >= thirty_days_ago).count()
         
+        # Monthly activity data (last 12 months)
+        monthly_data = []
+        for i in range(12):
+            month_start = datetime.utcnow() - timedelta(days=30*(12-i))
+            month_end = month_start + timedelta(days=30)
+            
+            animals_count = Animal.query.filter(
+                Animal.created_at >= month_start,
+                Animal.created_at < month_end
+            ).count()
+            
+            experiments_count = Experiment.query.filter(
+                Experiment.created_at >= month_start,
+                Experiment.created_at < month_end
+            ).count()
+            
+            monthly_data.append({
+                'month': month_start.strftime('%b'),
+                'animals': animals_count,
+                'experiments': experiments_count
+            })
+        
+        # Assay type distribution
+        assay_type_data = db.session.query(
+            AssayType.category, 
+            db.func.count(Assay.id)
+        ).join(Assay).group_by(AssayType.category).all()
+        
+        assay_distribution = {category: count for category, count in assay_type_data}
+        
+        # Data quality metrics
+        complete_experiments = Experiment.query.filter(
+            Experiment.end_date.isnot(None)
+        ).count()
+        
+        experiments_with_assays = Experiment.query.join(Assay).distinct().count()
+        
+        animals_with_metadata = Animal.query.filter(
+            Animal.strain.isnot(None),
+            Animal.age_at_start.isnot(None),
+            Animal.weight_at_start.isnot(None)
+        ).count()
+        
         return jsonify({
             'total_animals': total_animals,
             'total_experiments': total_experiments,
             'total_therapies': total_therapies,
             'total_assays': total_assays,
             'species_breakdown': species_breakdown,
-            'recent_experiments': recent_experiments
+            'recent_experiments': recent_experiments,
+            'monthly_data': monthly_data,
+            'assay_distribution': assay_distribution,
+            'data_quality': {
+                'complete_experiments': complete_experiments,
+                'experiments_with_assays': experiments_with_assays,
+                'animals_with_metadata': animals_with_metadata
+            }
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -576,6 +626,33 @@ def api_assay_types():
         'description': at.description,
         'units': at.units
     } for at in assay_types])
+
+
+@app.route('/select_experiment_for_assay')
+def select_experiment_for_assay():
+    """Select an existing experiment to add assays to"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    per_page = 20
+    
+    experiments_query = (Experiment.query
+                        .join(Animal)
+                        .join(Species)
+                        .order_by(Experiment.start_date.desc()))
+    
+    if search:
+        experiments_query = experiments_query.filter(
+            (Experiment.title.like(f'%{search}%')) |
+            (Animal.accession_number.like(f'%{search}%'))
+        )
+    
+    experiments_paginated = experiments_query.paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return render_template('select_experiment_for_assay.html', 
+                         experiments=experiments_paginated,
+                         search=search)
 
 
 @app.route('/api/assay_parameters')
