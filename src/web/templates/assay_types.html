@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Assay Types - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-clipboard-data"></i> Assay Types</h2>
+        <a href="{{ url_for('add_assay_type') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Assay Type
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="category" class="form-label">Category</label>
+                    <select name="category" id="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>
+                            {{ category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                        <a href="{{ url_for('assay_types') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assay Types List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Assay Type Catalog</h5>
+        </div>
+        <div class="card-body">
+            {% if assay_types.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Standard Units</th>
+                            <th>Usage Count</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assay_type in assay_types.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ assay_type.name }}</strong>
+                            </td>
+                            <td>
+                                {% if assay_type.category %}
+                                <span class="badge bg-secondary">{{ assay_type.category }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assay_type.description %}
+                                {{ assay_type.description[:100] }}{% if assay_type.description|length > 100 %}...{% endif %}
+                                {% else %}
+                                <span class="text-muted">No description</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assay_type.units %}
+                                <code>{{ assay_type.units }}</code>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ assay_type.assays|length }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            onclick="showAssayTypeDetails({{ assay_type.id }})">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <a href="#" class="btn btn-outline-success" 
+                                       onclick="useAssayType({{ assay_type.id }}, '{{ assay_type.name }}')">
+                                        <i class="bi bi-plus"></i> Use
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if assay_types.pages > 1 %}
+            <nav aria-label="Assay types pagination">
+                <ul class="pagination justify-content-center">
+                    {% if assay_types.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('assay_types', page=assay_types.prev_num, category=selected_category) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in assay_types.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != assay_types.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('assay_types', page=page_num, category=selected_category) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if assay_types.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('assay_types', page=assay_types.next_num, category=selected_category) }}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-clipboard-data text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">No assay types found</h5>
+                <p class="text-muted">Start by adding your first assay type to standardize your experimental procedures.</p>
+                <a href="{{ url_for('add_assay_type') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add First Assay Type
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Assay Type Details Modal -->
+<div class="modal fade" id="assayTypeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assay Type Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="assayTypeModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showAssayTypeDetails(assayTypeId) {
+    // Load assay type details via AJAX
+    fetch(`/api/assay_types/${assayTypeId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('assayTypeModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Information</h6>
+                        <p><strong>Name:</strong> ${data.name}</p>
+                        <p><strong>Category:</strong> ${data.category || 'Not specified'}</p>
+                        <p><strong>Standard Units:</strong> ${data.units || 'Not specified'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Description</h6>
+                        <p>${data.description || 'No description available'}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Standard Protocol</h6>
+                        <pre class="bg-light p-3 rounded">${data.standard_protocol || 'No protocol specified'}</pre>
+                    </div>
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('assayTypeModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading assay type details:', error);
+            alert('Error loading assay type details');
+        });
+}
+
+function useAssayType(assayTypeId, assayTypeName) {
+    // This could redirect to add assay form with pre-filled assay type
+    if (confirm(`Use "${assayTypeName}" for a new assay?`)) {
+        // For now, just show a message
+        alert(`Selected: ${assayTypeName}\n\nThis would open the assay creation form with this type pre-selected.`);
+    }
+}
+</script>
+{% endblock %} 

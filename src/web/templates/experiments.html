@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Experiments - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-flask"></i> Experiments</h2>
+        <a href="{{ url_for('add_experiment') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Experiment
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="species_id" class="form-label">Filter by Species</label>
+                    <select class="form-select" id="species_id" name="species_id">
+                        <option value="">All Species</option>
+                        {% for species in species_list %}
+                        <option value="{{ species.id }}" {% if selected_species == species.id %}selected{% endif %}>
+                            {{ species.common_name }} ({{ species.scientific_name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel"></i> Apply Filter
+                        </button>
+                        <a href="{{ url_for('experiments') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Experiments List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">All Experiments</h5>
+        </div>
+        <div class="card-body">
+            {% if experiments.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Title</th>
+                            <th>Animal</th>
+                            <th>Species</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Status</th>
+                            <th>Assays</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for experiment in experiments.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ experiment.title[:60] }}{% if experiment.title|length > 60 %}...{% endif %}</strong>
+                                {% if experiment.notes %}
+                                <br><small class="text-muted">{{ experiment.notes[:50] }}{% if experiment.notes|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code>{{ experiment.animal.accession_number }}</code>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary species-badge">
+                                    {{ experiment.animal.species.common_name }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ experiment.start_date.strftime('%Y-%m-%d') }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if experiment.end_date %}
+                                <small class="text-muted">
+                                    {{ experiment.end_date.strftime('%Y-%m-%d') }}
+                                </small>
+                                {% else %}
+                                <span class="badge bg-warning">Ongoing</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if experiment.status %}
+                                <span class="badge bg-{{ 'success' if experiment.status == 'completed' else 'warning' if experiment.status == 'ongoing' else 'secondary' }}">
+                                    {{ experiment.status.title() }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">Not Set</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ experiment.assays|length }}</span>
+                                {% if experiment.assays|length > 0 %}
+                                <br><small class="text-muted">{{ experiment.assays|length }} assay(s)</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('experiment_detail', experiment_id=experiment.id) }}" 
+                                       class="btn btn-outline-primary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" 
+                                       class="btn btn-success" title="Add Assay">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if experiments.pages > 1 %}
+            <nav aria-label="Experiments pagination">
+                <ul class="pagination justify-content-center">
+                    {% if experiments.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('experiments', page=experiments.prev_num, species_id=selected_species) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in experiments.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != experiments.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('experiments', page=page_num, species_id=selected_species) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if experiments.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('experiments', page=experiments.next_num, species_id=selected_species) }}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            <!-- Summary -->
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    Showing {{ experiments.items|length }} of {{ experiments.total }} experiments
+                    {% if selected_species %}
+                    (filtered by species)
+                    {% endif %}
+                </small>
+            </div>
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-flask text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">
+                    {% if selected_species %}
+                        No experiments found for the selected species
+                    {% else %}
+                        No experiments found
+                    {% endif %}
+                </h5>
+                <p class="text-muted">
+                    {% if selected_species %}
+                        Try selecting a different species or 
+                        <a href="{{ url_for('experiments') }}">view all experiments</a>
+                    {% else %}
+                        Create your first experiment to get started.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('add_experiment') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create First Experiment
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('add_experiment') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> New Experiment
+                        </a>
+                        <a href="{{ url_for('select_experiment_for_assay') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-clipboard-plus"></i> Existing Experiment
+                        </a>
+                        <a href="{{ url_for('add_animal') }}" class="btn btn-outline-info">
+                            <i class="bi bi-bug"></i> Add Animal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-search"></i> Search & Filter
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('search') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-search"></i> Search Experiments
+                        </a>
+                        <a href="{{ url_for('animals') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-bug"></i> View All Animals
+                        </a>
+                        <a href="{{ url_for('assay_types') }}" class="btn btn-outline-info">
+                            <i class="bi bi-clipboard-data"></i> Manage Assay Types
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-submit form when species filter changes
+document.getElementById('species_id').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+{% endblock %} 

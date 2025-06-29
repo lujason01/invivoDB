@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Select Experiment for Assay - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-clipboard-plus"></i> Select Experiment for Assay</h2>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-8">
+                    <label for="search" class="form-label">Search Experiments</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Search by experiment title or animal accession number..."
+                           value="{{ search }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <a href="{{ url_for('select_experiment_for_assay') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Experiments List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Available Experiments</h5>
+        </div>
+        <div class="card-body">
+            {% if experiments.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Experiment Title</th>
+                            <th>Animal</th>
+                            <th>Species</th>
+                            <th>Start Date</th>
+                            <th>Current Assays</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for experiment in experiments.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ experiment.title[:60] }}{% if experiment.title|length > 60 %}...{% endif %}</strong>
+                                {% if experiment.notes %}
+                                <br><small class="text-muted">{{ experiment.notes[:50] }}{% if experiment.notes|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code>{{ experiment.animal.accession_number }}</code>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary species-badge">
+                                    {{ experiment.animal.species.common_name }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ experiment.start_date.strftime('%Y-%m-%d') }}
+                                </small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ experiment.assays|length }}</span>
+                                {% if experiment.assays|length > 0 %}
+                                <br><small class="text-muted">{{ experiment.assays|length }} assay(s)</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('experiment_detail', experiment_id=experiment.id) }}" 
+                                       class="btn btn-outline-primary" title="View Experiment">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" 
+                                       class="btn btn-success" title="Add Assay">
+                                        <i class="bi bi-plus-circle"></i> Add Assay
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if experiments.pages > 1 %}
+            <nav aria-label="Experiments pagination">
+                <ul class="pagination justify-content-center">
+                    {% if experiments.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('select_experiment_for_assay', page=experiments.prev_num, search=search) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in experiments.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != experiments.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('select_experiment_for_assay', page=page_num, search=search) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if experiments.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('select_experiment_for_assay', page=experiments.next_num, search=search) }}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-flask text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">
+                    {% if search %}
+                        No experiments found matching "{{ search }}"
+                    {% else %}
+                        No experiments found
+                    {% endif %}
+                </h5>
+                <p class="text-muted">
+                    {% if search %}
+                        Try adjusting your search terms or 
+                        <a href="{{ url_for('select_experiment_for_assay') }}">view all experiments</a>
+                    {% else %}
+                        Create your first experiment to start adding assays.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('add_experiment') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create First Experiment
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="bi bi-question-circle"></i> How to Add Assays
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Step 1: Select an Experiment</h6>
+                    <p class="small">Choose an existing experiment from the list above. You can search by experiment title or animal accession number.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Step 2: Add Assay</h6>
+                    <p class="small">Click "Add Assay" to create a new assay for that experiment. You can select from existing assay types or create new ones.</p>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Step 3: Enter Measurements</h6>
+                    <p class="small">After creating the assay, add individual measurements with values, units, and reference ranges.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Step 4: Quality Control</h6>
+                    <p class="small">Track protocol deviations, equipment used, and quality control status for each assay.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-focus search field
+document.addEventListener('DOMContentLoaded', function() {
+    const searchField = document.getElementById('search');
+    if (searchField) {
+        searchField.focus();
+    }
+});
+
+// Quick search on Enter key
+document.getElementById('search').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        this.form.submit();
+    }
+});
+</script>
+{% endblock %} 

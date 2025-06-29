@@ -47,7 +47,7 @@ class Animal(db.Model):
     __tablename__ = 'animals'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    accession_number = db.Column(db.String(50), unique=True, nullable=False)  # e.g., "MM-001-2024"
+    accession_number = db.Column(db.String(15), unique=True, nullable=False)  # e.g., "MM202500000136" or "MAC202500000136"
     species_id = db.Column(db.Integer, db.ForeignKey('species.id'), nullable=False)
     strain = db.Column(db.String(100))  # e.g., "C57BL/6", "Sprague-Dawley"
     age_at_start = db.Column(db.Float)  # Age in weeks
@@ -138,7 +138,7 @@ class AssayType(db.Model):
     __tablename__ = 'assay_types'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(100), nullable=False)  # e.g., "Blood Chemistry", "Histology"
+    name = db.Column(db.String(100), nullable=False, unique=True)  # e.g., "Blood Chemistry", "Histology"
     category = db.Column(db.String(100))  # "Biochemical", "Molecular", "Behavioral"
     description = db.Column(db.Text)
     standard_protocol = db.Column(db.Text)  # Reference to standard protocol
@@ -237,8 +237,123 @@ class DataFile(db.Model):
 
 
 def generate_accession_number(species_code: str, year: int, sequence: int) -> str:
-    """Generate standardized accession numbers for animals"""
-    return f"{species_code}-{sequence:03d}-{year}"
+    """
+    Generate standardized accession numbers for animals
+    
+    Format: [SPECIES_CODE][YEAR][SEQUENCE][CHECKSUM]
+    Example: MM202500000136
+    
+    Args:
+        species_code: 2-3 letter species code (MM, RN, MAC, CAN)
+        year: 4-digit year (2025)
+        sequence: 6-digit sequence number (000001, 000002, etc.)
+        checksum: 2-digit validation checksum
+    
+    Returns:
+        str: 14-character accession number
+    """
+    # Format the base number: SPECIES_CODE + YEAR + SEQUENCE
+    base_number = f"{species_code}{year}{sequence:06d}"
+    
+    # Generate checksum (simple algorithm - can be enhanced)
+    checksum = generate_checksum(base_number)
+    
+    return f"{base_number}{checksum}"
+
+
+def generate_checksum(base_number: str) -> str:
+    """
+    Generate a 2-character checksum for validation
+    
+    Args:
+        base_number: The base accession number without checksum
+        
+    Returns:
+        str: 2-character checksum
+    """
+    # Simple checksum algorithm - sum of character values
+    total = 0
+    for char in base_number:
+        if char.isdigit():
+            total += int(char)
+        else:
+            total += ord(char) - ord('A') + 10
+    
+    # Convert to 2-character hex-like string
+    checksum_value = total % 256
+    return f"{checksum_value:02X}"
+
+
+def validate_accession_number(accession_number: str) -> bool:
+    """
+    Validate an accession number format and checksum
+    
+    Args:
+        accession_number: The accession number to validate
+        
+    Returns:
+        bool: True if valid, False otherwise
+    """
+    if not accession_number or len(accession_number) not in [14, 15]:
+        return False
+    
+    # Check format: SPECIES_CODE(2-3) + YEAR(4) + SEQUENCE(6) + CHECKSUM(2)
+    if not (accession_number[:2].isalpha() or accession_number[:3].isalpha()):
+        return False
+    
+    # Determine species code length
+    species_code_length = 3 if accession_number[:3].isalpha() else 2
+    species_code = accession_number[:species_code_length]
+    
+    # Check year (4 digits)
+    year_part = accession_number[species_code_length:species_code_length+4]
+    if not year_part.isdigit() or len(year_part) != 4:
+        return False
+    
+    # Check sequence (6 digits)
+    sequence_part = accession_number[species_code_length+4:species_code_length+10]
+    if not sequence_part.isdigit() or len(sequence_part) != 6:
+        return False
+    
+    # Check checksum (2 characters)
+    checksum_part = accession_number[species_code_length+10:]
+    if len(checksum_part) != 2:
+        return False
+    
+    # Validate checksum
+    base_number = accession_number[:-2]
+    expected_checksum = generate_checksum(base_number)
+    
+    return checksum_part == expected_checksum
+
+
+def parse_accession_number(accession_number: str) -> dict:
+    """
+    Parse an accession number into its components
+    
+    Args:
+        accession_number: The accession number to parse
+        
+    Returns:
+        dict: Dictionary with species_code, year, sequence, checksum
+    """
+    if not validate_accession_number(accession_number):
+        raise ValueError("Invalid accession number format")
+    
+    # Determine species code length
+    species_code_length = 3 if accession_number[:3].isalpha() else 2
+    species_code = accession_number[:species_code_length]
+    
+    year = int(accession_number[species_code_length:species_code_length+4])
+    sequence = int(accession_number[species_code_length+4:species_code_length+10])
+    checksum = accession_number[species_code_length+10:]
+    
+    return {
+        'species_code': species_code,
+        'year': year,
+        'sequence': sequence,
+        'checksum': checksum
+    }
 
 
 def create_tables(engine):

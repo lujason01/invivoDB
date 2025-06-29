@@ -125,6 +125,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('assay_types') }}">
+                            <i class="bi bi-clipboard-data"></i> Assay Types
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('therapies') }}">
                             <i class="bi bi-heart-pulse"></i> Therapies
                         </a>
@@ -153,8 +158,16 @@
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('add_experiment') }}">
-                            <i class="bi bi-flask"></i> Add Experiment
+                            <i class="bi bi-plus-circle"></i> New Experiment
                         </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('select_experiment_for_assay') }}">
+                            <i class="bi bi-clipboard-plus"></i> Existing Experiment
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('add_assay_type') }}">
+                            <i class="bi bi-clipboard-data"></i> Add Assay Type
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#" onclick="alert('Coming soon!')">
                             <i class="bi bi-heart-pulse"></i> Add Therapy
                         </a></li>

@@ -18,7 +18,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from models.database import (
     db, Species, Animal, TherapyCategory, Therapy, 
     Experiment, AssayType, Assay, AssayMeasurement, 
-    ExperimentResult, generate_accession_number, get_species_code
+    ExperimentResult, generate_accession_number, get_species_code, 
+    validate_accession_number, parse_accession_number
 )
 
 # Initialize Flask app
@@ -199,25 +200,29 @@ def add_animal():
                 flash('Invalid species selected', 'error')
                 return redirect(url_for('add_animal'))
             
-            # Get next sequence number for this species
-            last_animal = (Animal.query
-                          .filter_by(species_id=species_id)
-                          .order_by(Animal.id.desc())
-                          .first())
-            
-            sequence = 1
-            if last_animal:
-                # Extract sequence from last accession number
-                parts = last_animal.accession_number.split('-')
-                if len(parts) >= 2:
-                    sequence = int(parts[1]) + 1
-            
             species_code = get_species_code(species.scientific_name)
-            accession_number = generate_accession_number(species_code, datetime.now().year, sequence)
+            current_year = datetime.now().year
+            
+            # Find the next sequence number for this species and year
+            last_animal = Animal.query.filter(
+                Animal.accession_number.like(f"{species_code}{current_year}%")
+            ).order_by(Animal.accession_number.desc()).first()
+            
+            if last_animal:
+                # Parse the last accession number to get the sequence
+                try:
+                    parsed = parse_accession_number(last_animal.accession_number)
+                    sequence = parsed['sequence'] + 1
+                except ValueError:
+                    # Fallback: start from 1 if parsing fails
+                    sequence = 1
+            else:
+                sequence = 1
+            
+            accession_number = generate_accession_number(species_code, current_year, sequence)
             
             # Create new animal
             animal = Animal(
-                accession_number=accession_number,
                 species_id=species_id,
                 strain=strain,
                 age_at_start=age_at_start,
@@ -225,18 +230,20 @@ def add_animal():
                 sex=sex,
                 genetic_background=genetic_background,
                 housing_conditions=housing_conditions,
-                ethical_approval=ethical_approval
+                ethical_approval=ethical_approval,
+                accession_number=accession_number,
             )
             
             db.session.add(animal)
             db.session.commit()
             
             flash(f'Animal {accession_number} added successfully!', 'success')
-            return redirect(url_for('animal_detail', animal_id=animal.id))
+            return redirect(url_for('animals'))
             
         except Exception as e:
             db.session.rollback()
             flash(f'Error adding animal: {str(e)}', 'error')
+            return redirect(url_for('add_animal'))
     
     # GET request - show form
     species_list = Species.query.all()
@@ -291,13 +298,63 @@ def api_summary():
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         recent_experiments = Experiment.query.filter(Experiment.created_at >= thirty_days_ago).count()
         
+        # Monthly activity data (last 12 months)
+        monthly_data = []
+        for i in range(12):
+            month_start = datetime.utcnow() - timedelta(days=30*(12-i))
+            month_end = month_start + timedelta(days=30)
+            
+            animals_count = Animal.query.filter(
+                Animal.created_at >= month_start,
+                Animal.created_at < month_end
+            ).count()
+            
+            experiments_count = Experiment.query.filter(
+                Experiment.created_at >= month_start,
+                Experiment.created_at < month_end
+            ).count()
+            
+            monthly_data.append({
+                'month': month_start.strftime('%b'),
+                'animals': animals_count,
+                'experiments': experiments_count
+            })
+        
+        # Assay type distribution
+        assay_type_data = db.session.query(
+            AssayType.category, 
+            db.func.count(Assay.id)
+        ).join(Assay).group_by(AssayType.category).all()
+        
+        assay_distribution = {category: count for category, count in assay_type_data}
+        
+        # Data quality metrics
+        complete_experiments = Experiment.query.filter(
+            Experiment.end_date.isnot(None)
+        ).count()
+        
+        experiments_with_assays = Experiment.query.join(Assay).distinct().count()
+        
+        animals_with_metadata = Animal.query.filter(
+            Animal.strain.isnot(None),
+            Animal.age_at_start.isnot(None),
+            Animal.weight_at_start.isnot(None)
+        ).count()
+        
         return jsonify({
             'total_animals': total_animals,
             'total_experiments': total_experiments,
             'total_therapies': total_therapies,
             'total_assays': total_assays,
             'species_breakdown': species_breakdown,
-            'recent_experiments': recent_experiments
+            'recent_experiments': recent_experiments,
+            'monthly_data': monthly_data,
+            'assay_distribution': assay_distribution,
+            'data_quality': {
+                'complete_experiments': complete_experiments,
+                'experiments_with_assays': experiments_with_assays,
+                'animals_with_metadata': animals_with_metadata
+            }
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -305,79 +362,316 @@ def api_summary():
 
 @app.route('/add_experiment', methods=['GET', 'POST'])
 def add_experiment():
-    """Add a new experiment and (optionally) mass entry of animals."""
+    """Add a new experiment to the database"""
     if request.method == 'POST':
         try:
             title = request.form.get('title')
-            start_date = request.form.get('start_date')
-            end_date = request.form.get('end_date')
-            ongoing = request.form.get('ongoing') == 'on'
+            animal_id = request.form.get('animal_id', type=int)
+            start_date_str = request.form.get('start_date')
+            end_date_str = request.form.get('end_date')
+            study_design = request.form.get('study_design')
+            primary_endpoint = request.form.get('primary_endpoint')
+            secondary_endpoints = request.form.get('secondary_endpoints')
+            inclusion_criteria = request.form.get('inclusion_criteria')
+            exclusion_criteria = request.form.get('exclusion_criteria')
+            statistical_method = request.form.get('statistical_method')
+            sample_size = request.form.get('sample_size', type=int)
+            power_analysis = request.form.get('power_analysis')
+            blinding = request.form.get('blinding') == 'on'
+            randomization = request.form.get('randomization') == 'on'
+            control_group = request.form.get('control_group')
             notes = request.form.get('notes')
-            species_id = request.form.get('species_id', type=int)
-            strain = request.form.get('strain')
-            age_at_start = request.form.get('age_at_start', type=float)
-            weight_at_start = request.form.get('weight_at_start', type=float)
-            genetic_background = request.form.get('genetic_background')
-            housing_conditions = request.form.get('housing_conditions')
-            ethical_approval = request.form.get('ethical_approval')
-            num_males = request.form.get('num_males', type=int)
-            num_females = request.form.get('num_females', type=int)
-            num_intersex = request.form.get('num_intersex', type=int)
-
-            # Create animals first if numbers provided
-            animals = []
-            for sex, count in [('Male', num_males), ('Female', num_females), ('Intersex', num_intersex)]:
-                for _ in range(count or 0):
-                    species = Species.query.get(species_id)
-                    if not species:
-                        continue
-                    last_animal = (Animal.query
-                        .filter_by(species_id=species_id)
-                        .order_by(Animal.id.desc())
-                        .first())
-                    sequence = 1
-                    if last_animal:
-                        parts = last_animal.accession_number.split('-')
-                        if len(parts) >= 2:
-                            sequence = int(parts[1]) + 1
-                    species_code = get_species_code(species.scientific_name)
-                    accession_number = generate_accession_number(species_code, datetime.now().year, sequence)
-                    animal = Animal(
-                        accession_number=accession_number,
-                        species_id=species_id,
-                        strain=strain,
-                        age_at_start=age_at_start,
-                        weight_at_start=weight_at_start,
-                        sex=sex,
-                        genetic_background=genetic_background,
-                        housing_conditions=housing_conditions,
-                        ethical_approval=ethical_approval
-                    )
-                    db.session.add(animal)
-                    db.session.flush()
-                    animals.append(animal)
-
-            # Create experiment for each animal
-            experiments = []
-            for animal in animals:
-                experiment = Experiment(
-                    title=title,
-                    animal_id=animal.id,
-                    start_date=datetime.strptime(start_date, '%Y-%m-%d'),
-                    end_date=datetime.strptime(end_date, '%Y-%m-%d') if end_date and not ongoing else None,
-                    notes=notes
-                )
-                db.session.add(experiment)
-                experiments.append(experiment)
-
+            publication_doi = request.form.get('publication_doi')
+            data_availability = request.form.get('data_availability', 'Private')
+            
+            # Parse dates
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if start_date_str else None
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if end_date_str else None
+            
+            # Calculate duration
+            duration_days = None
+            if start_date and end_date:
+                duration_days = (end_date - start_date).days
+            
+            # Create new experiment
+            experiment = Experiment(
+                title=title,
+                animal_id=animal_id,
+                start_date=start_date,
+                end_date=end_date,
+                duration_days=duration_days,
+                study_design=study_design,
+                primary_endpoint=primary_endpoint,
+                secondary_endpoints=secondary_endpoints,
+                inclusion_criteria=inclusion_criteria,
+                exclusion_criteria=exclusion_criteria,
+                statistical_method=statistical_method,
+                sample_size=sample_size,
+                power_analysis=power_analysis,
+                blinding=blinding,
+                randomization=randomization,
+                control_group=control_group,
+                notes=notes,
+                publication_doi=publication_doi,
+                data_availability=data_availability
+            )
+            
+            db.session.add(experiment)
             db.session.commit()
-            flash(f'Experiment "{title}" and {len(animals)} animals added successfully!', 'success')
-            return redirect(url_for('experiment_detail', experiment_id=experiments[0].id) if experiments else url_for('experiments'))
+            
+            flash(f'Experiment "{title}" added successfully!', 'success')
+            return redirect(url_for('experiments'))
+            
         except Exception as e:
             db.session.rollback()
             flash(f'Error adding experiment: {str(e)}', 'error')
-    species_list = Species.query.all()
-    return render_template('add_experiment.html', species_list=species_list)
+            return redirect(url_for('add_experiment'))
+    
+    # GET request - show form
+    animals_list = Animal.query.join(Species).all()
+    return render_template('add_experiment.html', animals_list=animals_list)
+
+
+@app.route('/assay_types')
+def assay_types():
+    """List all assay types"""
+    page = request.args.get('page', 1, type=int)
+    category_filter = request.args.get('category', '')
+    per_page = 20
+    
+    assay_types_query = AssayType.query.order_by(AssayType.name)
+    
+    if category_filter:
+        assay_types_query = assay_types_query.filter(AssayType.category == category_filter)
+    
+    assay_types_paginated = assay_types_query.paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    # Get unique categories for filter
+    categories = db.session.query(AssayType.category).distinct().filter(AssayType.category.isnot(None)).all()
+    categories = [cat[0] for cat in categories]
+    
+    return render_template('assay_types.html',
+                         assay_types=assay_types_paginated,
+                         categories=categories,
+                         selected_category=category_filter)
+
+
+@app.route('/add_assay_type', methods=['GET', 'POST'])
+def add_assay_type():
+    """Add a new assay type"""
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            category = request.form.get('category')
+            description = request.form.get('description')
+            standard_protocol = request.form.get('standard_protocol')
+            units = request.form.get('units')
+            
+            # Check if assay type already exists
+            existing = AssayType.query.filter_by(name=name).first()
+            if existing:
+                flash(f'Assay type "{name}" already exists', 'error')
+                return redirect(url_for('add_assay_type'))
+            
+            assay_type = AssayType(
+                name=name,
+                category=category,
+                description=description,
+                standard_protocol=standard_protocol,
+                units=units
+            )
+            
+            db.session.add(assay_type)
+            db.session.commit()
+            
+            flash(f'Assay type "{name}" added successfully!', 'success')
+            return redirect(url_for('assay_types'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding assay type: {str(e)}', 'error')
+            return redirect(url_for('add_assay_type'))
+    
+    # GET request - show form
+    return render_template('add_assay_type.html')
+
+
+@app.route('/add_assay/<int:experiment_id>', methods=['GET', 'POST'])
+def add_assay(experiment_id):
+    """Add a new assay to an experiment"""
+    experiment = Experiment.query.get_or_404(experiment_id)
+    
+    if request.method == 'POST':
+        try:
+            assay_type_id = request.form.get('assay_type_id', type=int)
+            timepoint = request.form.get('timepoint')
+            timepoint_hours = request.form.get('timepoint_hours', type=float)
+            protocol_deviation = request.form.get('protocol_deviation')
+            operator = request.form.get('operator')
+            equipment = request.form.get('equipment')
+            batch_id = request.form.get('batch_id')
+            quality_control_passed = request.form.get('quality_control_passed') == 'on'
+            notes = request.form.get('notes')
+            
+            # Create assay
+            assay = Assay(
+                experiment_id=experiment_id,
+                assay_type_id=assay_type_id,
+                timepoint=timepoint,
+                timepoint_hours=timepoint_hours,
+                protocol_deviation=protocol_deviation,
+                operator=operator,
+                equipment=equipment,
+                batch_id=batch_id,
+                quality_control_passed=quality_control_passed,
+                notes=notes
+            )
+            
+            db.session.add(assay)
+            db.session.commit()
+            
+            flash(f'Assay added successfully!', 'success')
+            return redirect(url_for('experiment_detail', experiment_id=experiment_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding assay: {str(e)}', 'error')
+            return redirect(url_for('add_assay', experiment_id=experiment_id))
+    
+    # GET request - show form
+    assay_types = AssayType.query.order_by(AssayType.name).all()
+    return render_template('add_assay.html', experiment=experiment, assay_types=assay_types)
+
+
+@app.route('/add_measurement/<int:assay_id>', methods=['GET', 'POST'])
+def add_measurement(assay_id):
+    """Add measurements to an assay"""
+    assay = Assay.query.get_or_404(assay_id)
+    
+    if request.method == 'POST':
+        try:
+            parameter_name = request.form.get('parameter_name')
+            value = request.form.get('value', type=float)
+            unit = request.form.get('unit')
+            reference_range_min = request.form.get('reference_range_min', type=float)
+            reference_range_max = request.form.get('reference_range_max', type=float)
+            detection_limit = request.form.get('detection_limit', type=float)
+            below_detection_limit = request.form.get('below_detection_limit') == 'on'
+            dilution_factor = request.form.get('dilution_factor', type=float, default=1.0)
+            
+            # Determine if value is normal
+            is_normal = None
+            if reference_range_min is not None and reference_range_max is not None and value is not None:
+                is_normal = reference_range_min <= value <= reference_range_max
+            
+            measurement = AssayMeasurement(
+                assay_id=assay_id,
+                parameter_name=parameter_name,
+                value=value,
+                unit=unit,
+                reference_range_min=reference_range_min,
+                reference_range_max=reference_range_max,
+                is_normal=is_normal,
+                detection_limit=detection_limit,
+                below_detection_limit=below_detection_limit,
+                dilution_factor=dilution_factor
+            )
+            
+            db.session.add(measurement)
+            db.session.commit()
+            
+            flash(f'Measurement "{parameter_name}" added successfully!', 'success')
+            return redirect(url_for('assay_detail', assay_id=assay_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding measurement: {str(e)}', 'error')
+            return redirect(url_for('add_measurement', assay_id=assay_id))
+    
+    # GET request - show form
+    return render_template('add_measurement.html', assay=assay)
+
+
+@app.route('/assay/<int:assay_id>')
+def assay_detail(assay_id):
+    """Show detailed information about a specific assay"""
+    assay = Assay.query.get_or_404(assay_id)
+    measurements = AssayMeasurement.query.filter_by(assay_id=assay_id).all()
+    
+    return render_template('assay_detail.html', assay=assay, measurements=measurements)
+
+
+@app.route('/api/assay_types')
+def api_assay_types():
+    """API endpoint for assay types (for autocomplete)"""
+    category = request.args.get('category', '')
+    search = request.args.get('search', '')
+    
+    query = AssayType.query
+    
+    if category:
+        query = query.filter(AssayType.category == category)
+    
+    if search:
+        query = query.filter(AssayType.name.ilike(f'%{search}%'))
+    
+    assay_types = query.order_by(AssayType.name).limit(20).all()
+    
+    return jsonify([{
+        'id': at.id,
+        'name': at.name,
+        'category': at.category,
+        'description': at.description,
+        'units': at.units
+    } for at in assay_types])
+
+
+@app.route('/select_experiment_for_assay')
+def select_experiment_for_assay():
+    """Select an existing experiment to add assays to"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    per_page = 20
+    
+    experiments_query = (Experiment.query
+                        .join(Animal)
+                        .join(Species)
+                        .order_by(Experiment.start_date.desc()))
+    
+    if search:
+        experiments_query = experiments_query.filter(
+            (Experiment.title.like(f'%{search}%')) |
+            (Animal.accession_number.like(f'%{search}%'))
+        )
+    
+    experiments_paginated = experiments_query.paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return render_template('select_experiment_for_assay.html', 
+                         experiments=experiments_paginated,
+                         search=search)
+
+
+@app.route('/api/assay_parameters')
+def api_assay_parameters():
+    """API endpoint for common parameters by assay type"""
+    assay_type_id = request.args.get('assay_type_id', type=int)
+    
+    if not assay_type_id:
+        return jsonify([])
+    
+    # Get existing parameters for this assay type
+    parameters = db.session.query(AssayMeasurement.parameter_name, AssayMeasurement.unit).join(Assay).filter(
+        Assay.assay_type_id == assay_type_id
+    ).distinct().all()
+    
+    return jsonify([{
+        'parameter_name': param[0],
+        'unit': param[1]
+    } for param in parameters])
 
 
 # Error handlers

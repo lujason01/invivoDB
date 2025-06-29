@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Add Assay Type - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> Add New Assay Type
+                    </h4>
+                    <p class="text-muted mb-0">Create a standardized assay type for consistent experimental procedures</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row g-3">
+                            <!-- Assay Type Name -->
+                            <div class="col-md-8">
+                                <label for="name" class="form-label">Assay Type Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       required placeholder="e.g., Blood Chemistry, Histology, ELISA">
+                                <div class="form-text">Choose a descriptive name that will be used across experiments</div>
+                            </div>
+                            
+                            <!-- Category -->
+                            <div class="col-md-4">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Select Category</option>
+                                    <option value="Biochemical">Biochemical</option>
+                                    <option value="Molecular">Molecular</option>
+                                    <option value="Behavioral">Behavioral</option>
+                                    <option value="Histological">Histological</option>
+                                    <option value="Imaging">Imaging</option>
+                                    <option value="Physiological">Physiological</option>
+                                    <option value="Immunological">Immunological</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Description -->
+                            <div class="col-12">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3"
+                                          placeholder="Brief description of what this assay measures and how it's performed"></textarea>
+                            </div>
+                            
+                            <!-- Standard Protocol -->
+                            <div class="col-12">
+                                <label for="standard_protocol" class="form-label">Standard Protocol</label>
+                                <textarea class="form-control" id="standard_protocol" name="standard_protocol" rows="4"
+                                          placeholder="Reference to standard protocol, SOP number, or brief protocol description"></textarea>
+                                <div class="form-text">This helps ensure consistency across experiments</div>
+                            </div>
+                            
+                            <!-- Standard Units -->
+                            <div class="col-md-6">
+                                <label for="units" class="form-label">Standard Units</label>
+                                <input type="text" class="form-control" id="units" name="units" 
+                                       placeholder="e.g., mg/dL, ng/mL, %">
+                                <div class="form-text">Common units for measurements from this assay</div>
+                            </div>
+                            
+                            <!-- Common Parameters (for reference) -->
+                            <div class="col-md-6">
+                                <label class="form-label">Common Parameters</label>
+                                <div class="form-control-plaintext">
+                                    <small class="text-muted">
+                                        Examples: Glucose, Weight, Cell Count, etc.<br>
+                                        These will be suggested when adding measurements
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('assay_types') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Assay Types
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-warning me-2">
+                                    <i class="bi bi-arrow-clockwise"></i> Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Create Assay Type
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Help Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-question-circle"></i> Tips for Creating Assay Types
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Naming Convention</h6>
+                            <ul class="small">
+                                <li>Use clear, descriptive names</li>
+                                <li>Avoid abbreviations unless standard</li>
+                                <li>Be specific about the technique</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Categories</h6>
+                            <ul class="small">
+                                <li><strong>Biochemical:</strong> Blood chemistry, enzyme assays</li>
+                                <li><strong>Molecular:</strong> PCR, Western blot, sequencing</li>
+                                <li><strong>Behavioral:</strong> Cognitive tests, activity monitoring</li>
+                                <li><strong>Histological:</strong> Tissue staining, microscopy</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-suggest categories based on assay name
+document.getElementById('name').addEventListener('input', function() {
+    const name = this.value.toLowerCase();
+    const categorySelect = document.getElementById('category');
+    
+    // Simple keyword-based suggestions
+    if (name.includes('blood') || name.includes('serum') || name.includes('plasma')) {
+        categorySelect.value = 'Biochemical';
+    } else if (name.includes('pcr') || name.includes('western') || name.includes('elisa')) {
+        categorySelect.value = 'Molecular';
+    } else if (name.includes('behavior') || name.includes('activity') || name.includes('cognitive')) {
+        categorySelect.value = 'Behavioral';
+    } else if (name.includes('histology') || name.includes('staining') || name.includes('microscopy')) {
+        categorySelect.value = 'Histological';
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    if (name.length < 3) {
+        e.preventDefault();
+        alert('Assay type name must be at least 3 characters long');
+        return false;
+    }
+});
+</script>
+{% endblock %} 

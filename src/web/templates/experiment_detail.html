@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Experiment Details - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Experiment Information -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-flask"></i> {{ experiment.title }}
+                        </h4>
+                        <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add Assay
+                        </a>
+                    </div>
+                    <p class="text-muted mb-0">
+                        Animal: <code>{{ experiment.animal.accession_number }}</code> 
+                        ({{ experiment.animal.species.common_name }})
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Study Information</h6>
+                            <p><strong>Start Date:</strong> {{ experiment.start_date.strftime('%Y-%m-%d') }}</p>
+                            <p><strong>End Date:</strong> {{ experiment.end_date.strftime('%Y-%m-%d') if experiment.end_date else 'Ongoing' }}</p>
+                            <p><strong>Duration:</strong> {{ experiment.duration_days or 'Calculating...' }} days</p>
+                            <p><strong>Study Design:</strong> {{ experiment.study_design or 'Not specified' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Study Parameters</h6>
+                            <p><strong>Sample Size:</strong> {{ experiment.sample_size or 'Not specified' }}</p>
+                            <p><strong>Blinding:</strong> 
+                                {% if experiment.blinding %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Randomization:</strong> 
+                                {% if experiment.randomization %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Data Availability:</strong> 
+                                <span class="badge bg-{{ 'success' if experiment.data_availability == 'Public' else 'warning' if experiment.data_availability == 'Restricted' else 'secondary' }}">
+                                    {{ experiment.data_availability }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if experiment.primary_endpoint %}
+                    <hr>
+                    <h6>Endpoints</h6>
+                    <p><strong>Primary:</strong> {{ experiment.primary_endpoint }}</p>
+                    {% if experiment.secondary_endpoints %}
+                    <p><strong>Secondary:</strong> {{ experiment.secondary_endpoints }}</p>
+                    {% endif %}
+                    {% endif %}
+                    
+                    {% if experiment.notes %}
+                    <hr>
+                    <h6>Notes</h6>
+                    <p>{{ experiment.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Assays -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-data"></i> Assays ({{ assays|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if assays %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Assay Type</th>
+                                    <th>Timepoint</th>
+                                    <th>Operator</th>
+                                    <th>QC Status</th>
+                                    <th>Measurements</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assay in assays %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ assay.assay_type.name }}</strong>
+                                        {% if assay.assay_type.category %}
+                                        <br><small class="text-muted">{{ assay.assay_type.category }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ assay.timepoint or 'Not specified' }}
+                                        {% if assay.timepoint_hours %}
+                                        <br><small class="text-muted">{{ assay.timepoint_hours }}h</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ assay.operator or 'Not specified' }}</td>
+                                    <td>
+                                        {% if assay.quality_control_passed %}
+                                        <span class="badge bg-success">Passed</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ assay.measurements|length }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('assay_detail', assay_id=assay.id) }}" 
+                                               class="btn btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('add_measurement', assay_id=assay.id) }}" 
+                                               class="btn btn-outline-success">
+                                                <i class="bi bi-plus"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clipboard-data text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No assays yet</h5>
+                        <p class="text-muted">Add assays to this experiment to record experimental procedures and measurements.</p>
+                        <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add First Assay
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Results -->
+            {% if results %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Primary Outcome</h6>
+                            <p>{{ results.primary_outcome or 'Not specified' }}</p>
+                            
+                            <h6>Statistical Significance</h6>
+                            {% if results.statistical_significance is not none %}
+                                {% if results.statistical_significance %}
+                                <span class="badge bg-success">Significant</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Not Significant</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">Not specified</span>
+                            {% endif %}
+                            
+                            {% if results.p_value %}
+                            <p><strong>P-value:</strong> {{ "%.4f"|format(results.p_value) }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Secondary Outcomes</h6>
+                            <p>{{ results.secondary_outcomes or 'Not specified' }}</p>
+                            
+                            {% if results.efficacy_score %}
+                            <p><strong>Efficacy Score:</strong> {{ "%.2f"|format(results.efficacy_score) }}</p>
+                            {% endif %}
+                            
+                            {% if results.mortality_rate %}
+                            <p><strong>Mortality Rate:</strong> {{ "%.1f"|format(results.mortality_rate) }}%</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if results.conclusions %}
+                    <hr>
+                    <h6>Conclusions</h6>
+                    <p>{{ results.conclusions }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Animal Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bug"></i> Animal Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Accession:</strong> <code>{{ experiment.animal.accession_number }}</code></p>
+                    <p><strong>Species:</strong> {{ experiment.animal.species.common_name }}</p>
+                    <p><strong>Strain:</strong> {{ experiment.animal.strain or 'Not specified' }}</p>
+                    <p><strong>Sex:</strong> {{ experiment.animal.sex or 'Not specified' }}</p>
+                    <p><strong>Age at Start:</strong> {{ experiment.animal.age_at_start or 'Not specified' }} weeks</p>
+                    <p><strong>Weight at Start:</strong> {{ experiment.animal.weight_at_start or 'Not specified' }} g</p>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add Assay
+                        </a>
+                        <a href="{{ url_for('experiments') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Experiments
+                        </a>
+                        <a href="{{ url_for('animal_detail', animal_id=experiment.animal.id) }}" class="btn btn-outline-info">
+                            <i class="bi bi-bug"></i> View Animal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
