@@ -85,6 +85,10 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('experiment_profile', experiment_id=experiment.id) }}" 
+                                       class="btn btn-outline-info" title="View Profile">
+                                        <i class="bi bi-graph-up"></i>
+                                    </a>
                                     <a href="{{ url_for('experiment_detail', experiment_id=experiment.id) }}" 
                                        class="btn btn-outline-primary" title="View Experiment">
                                         <i class="bi bi-eye"></i>

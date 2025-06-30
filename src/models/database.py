@@ -36,6 +36,7 @@ class Species(db.Model):
     common_name = db.Column(db.String(100), nullable=False)  # e.g., "Mouse", "Rat"
     scientific_name = db.Column(db.String(200), nullable=False)  # e.g., "Mus musculus"
     taxonomy_id = db.Column(db.String(50))  # NCBI Taxonomy ID
+    description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships

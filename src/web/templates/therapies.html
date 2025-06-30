@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Therapies Catalogue - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <h2><i class="bi bi-heart-pulse"></i> Therapies Catalogue</h2>
+        <form class="d-flex flex-grow-1 ms-4" method="GET" action="{{ url_for('therapies') }}" style="max-width:600px; min-width:350px;">
+            <input class="form-control form-control-lg me-2" style="flex:1; min-width:250px;" type="search" name="q" placeholder="Search therapies..." value="{{ search_query }}">
+            <button class="btn btn-outline-primary btn-lg" type="submit"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
+    <div class="accordion" id="therapyCategoriesAccordion">
+        {% set badge_colors = ['primary', 'success', 'danger', 'info', 'warning', 'secondary', 'dark'] %}
+        {% for category in categories %}
+        {% set badge_color = badge_colors[loop.index0 % badge_colors|length] %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ category.id }}">
+                <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ category.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="collapse{{ category.id }}">
+                    <span class="badge bg-{{ badge_color }} fs-5 px-3 py-2 me-2">{{ category.name }}</span>
+                    <span class="text-muted small">{{ category.description or '' }}</span>
+                </button>
+            </h2>
+            <div id="collapse{{ category.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" aria-labelledby="heading{{ category.id }}" data-bs-parent="#therapyCategoriesAccordion">
+                <div class="accordion-body">
+                    {% set therapies = grouped_therapies[category] %}
+                    {% if therapies %}
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for therapy in therapies %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ therapy.name }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ therapy.vector_type or therapy.administration_route or '' }}</h6>
+                                    <p class="card-text">{{ therapy.description[:120] }}{% if therapy.description and therapy.description|length > 120 %}...{% endif %}</p>
+                                    <button class="btn btn-outline-info btn-sm mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#therapyDetails{{ therapy.id }}" aria-expanded="false" aria-controls="therapyDetails{{ therapy.id }}">
+                                        <i class="bi bi-info-circle"></i> Details
+                                    </button>
+                                    <div class="collapse mt-2" id="therapyDetails{{ therapy.id }}">
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item"><strong>MOA:</strong> {{ therapy.category.mechanism_of_action or 'N/A' }}</li>
+                                            <li class="list-group-item"><strong>Molecular Target:</strong> {{ therapy.molecular_target or 'N/A' }}</li>
+                                            <li class="list-group-item"><strong>Dosage:</strong> {{ therapy.dosage or 'N/A' }}</li>
+                                            <li class="list-group-item"><strong>Compound ID:</strong> {{ therapy.compound_id or 'N/A' }}</li>
+                                            <li class="list-group-item"><strong>Route:</strong> {{ therapy.administration_route or 'N/A' }}</li>
+                                            <li class="list-group-item"><strong>Created:</strong> {{ therapy.created_at.strftime('%Y-%m-%d') }}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-secondary text-center mb-0">No therapies in this category yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="text-end mt-4">
+        <a href="#" class="btn btn-success disabled"><i class="bi bi-plus-circle"></i> Add Therapy (Coming Soon)</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    html, body {
+        height: 100%;
+    }
+    body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    main {
+        flex: 1 0 auto;
+    }
+    footer {
+        flex-shrink: 0;
+        width: 100%;
+        position: relative;
+        bottom: 0;
+    }
+</style>
+{% endblock %} 

@@ -157,27 +157,19 @@ def experiment_detail(experiment_id):
 
 @app.route('/therapies')
 def therapies():
-    """List all therapies"""
-    page = request.args.get('page', 1, type=int)
-    category_filter = request.args.get('category_id', type=int)
-    per_page = 20
-    
-    therapies_query = Therapy.query.join(TherapyCategory).order_by(Therapy.name)
-    
-    if category_filter:
-        therapies_query = therapies_query.filter(TherapyCategory.id == category_filter)
-    
-    therapies_paginated = therapies_query.paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    
-    # Get categories for filter dropdown
-    categories_list = TherapyCategory.query.all()
-    
+    """Innovative catalogue of all therapies grouped by category"""
+    search_query = request.args.get('q', '').strip()
+    categories = TherapyCategory.query.order_by(TherapyCategory.name).all()
+    grouped_therapies = {}
+    for category in categories:
+        therapies_query = Therapy.query.filter_by(category_id=category.id).order_by(Therapy.name)
+        if search_query:
+            therapies_query = therapies_query.filter(Therapy.name.ilike(f'%{search_query}%'))
+        grouped_therapies[category] = therapies_query.all()
     return render_template('therapies.html',
-                         therapies=therapies_paginated,
-                         categories_list=categories_list,
-                         selected_category=category_filter)
+                          grouped_therapies=grouped_therapies,
+                          categories=categories,
+                          search_query=search_query)
 
 
 @app.route('/add_animal', methods=['GET', 'POST'])
@@ -428,8 +420,8 @@ def add_experiment():
             return redirect(url_for('add_experiment'))
     
     # GET request - show form
-    animals_list = Animal.query.join(Species).all()
-    return render_template('add_experiment.html', animals_list=animals_list)
+    species_list = Species.query.all()
+    return render_template('add_experiment.html', species_list=species_list)
 
 
 @app.route('/assay_types')
@@ -672,6 +664,98 @@ def api_assay_parameters():
         'parameter_name': param[0],
         'unit': param[1]
     } for param in parameters])
+
+
+@app.route('/experiment_profile/<int:experiment_id>')
+def experiment_profile(experiment_id):
+    """Show comprehensive experiment profile with insights and analytics"""
+    experiment = Experiment.query.get_or_404(experiment_id)
+    assays = Assay.query.filter_by(experiment_id=experiment_id).join(AssayType).all()
+    results = ExperimentResult.query.filter_by(experiment_id=experiment_id).first()
+    
+    # Calculate assay type distribution
+    assay_type_counts = {}
+    for assay in assays:
+        category = assay.assay_type.category or 'Other'
+        assay_type_counts[category] = assay_type_counts.get(category, 0) + 1
+    
+    # Generate measurement insights
+    measurement_insights = []
+    all_measurements = []
+    
+    for assay in assays:
+        for measurement in assay.measurements:
+            all_measurements.append({
+                'parameter': measurement.parameter_name,
+                'value': measurement.value,
+                'unit': measurement.unit,
+                'assay_type': assay.assay_type.name
+            })
+    
+    # Group measurements by parameter and calculate insights
+    parameter_groups = {}
+    for measurement in all_measurements:
+        param = measurement['parameter']
+        if param not in parameter_groups:
+            parameter_groups[param] = []
+        parameter_groups[param].append(measurement['value'])
+    
+    for param, values in parameter_groups.items():
+        if values and all(v is not None for v in values):
+            avg_value = sum(values) / len(values)
+            measurement_insights.append({
+                'parameter': param,
+                'value': round(avg_value, 2),
+                'unit': next((m['unit'] for m in all_measurements if m['parameter'] == param), ''),
+                'count': len(values),
+                'min': min(values),
+                'max': max(values)
+            })
+    
+    # Sort insights by count (most measured parameters first)
+    measurement_insights.sort(key=lambda x: x['count'], reverse=True)
+    
+    # Get data files (placeholder for future implementation)
+    data_files = []  # This would be populated from DataFile model when implemented
+    
+    return render_template('experiment_profile.html',
+                         experiment=experiment,
+                         assays=assays,
+                         results=results,
+                         assay_type_counts=assay_type_counts,
+                         measurement_insights=measurement_insights[:8],  # Top 8 insights
+                         data_files=data_files)
+
+
+@app.route('/species')
+def species_profiles():
+    """Show big cards for each species with photo, description, and hashtags."""
+    species_list = Species.query.all()
+    species_hashtags = {
+        'Mus musculus': ['#mouse', '#mm', '#rodent'],
+        'Rattus norvegicus': ['#rat', '#rn', '#rodent'],
+        'Macaca mulatta': ['#nhp', '#nonhumanprimate', '#macaque', '#mac'],
+        'Canis lupus familiaris': ['#dog', '#canine', '#can', '#beagle', '#labrador', '#petdog'],
+        'Mesocricetus auratus': ['#hamster', '#goldenhamster', '#mesocricetus', '#rodent'],
+    }
+    pubmed_counts = {
+        'Mus musculus': 753728,
+        'Rattus norvegicus': 319575,
+        'Macaca mulatta': 8837,
+        'Canis lupus familiaris': 63013,
+        'Mesocricetus auratus': 1716,
+    }
+    species_descriptions = {
+        'Mus musculus': 'The house mouse is the most widely used mammalian model organism in biomedical research, genetics, and physiology.',
+        'Rattus norvegicus': 'The laboratory rat is a key model for physiology, pharmacology, and behavioral studies.',
+        'Macaca mulatta': 'The rhesus macaque is a nonhuman primate model important for neuroscience, immunology, and infectious disease research.',
+        'Canis lupus familiaris': 'The domestic dog is used in translational research, genetics, and as a model for human disease and behavior.',
+        'Mesocricetus auratus': 'The golden hamster is a small rodent model used in infectious disease, cancer, and reproductive biology studies.',
+    }
+    for s in species_list:
+        s.pubmed_count = pubmed_counts.get(s.scientific_name, '?')
+        s.description = species_descriptions.get(s.scientific_name, s.description or '')
+    return render_template('species_profiles.html', species_list=species_list, species_hashtags=species_hashtags)
 
 
 # Error handlers
