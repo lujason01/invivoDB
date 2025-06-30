@@ -1,0 +1,525 @@
+{% extends "base.html" %}
+
+{% block title %}{{ experiment.title }} - Experiment Profile - InvivoDB{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section" style="background: linear-gradient(135deg, #0d6efd 0%, #198754 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-light">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('experiments') }}" class="text-light">Experiments</a></li>
+                        <li class="breadcrumb-item active text-light" aria-current="page">Profile</li>
+                    </ol>
+                </nav>
+                <h1 class="display-5 fw-bold text-white mb-3">
+                    <i class="bi bi-flask me-3"></i>{{ experiment.title }}
+                </h1>
+                <p class="lead text-white-50 mb-4">
+                    {{ experiment.animal.species.common_name }} • {{ experiment.animal.accession_number }} • 
+                    {{ experiment.start_date.strftime('%B %Y') }}
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{{ url_for('experiment_detail', experiment_id=experiment.id) }}" class="btn btn-light">
+                        <i class="bi bi-eye"></i> Detailed View
+                    </a>
+                    <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" class="btn btn-outline-light">
+                        <i class="bi bi-plus-circle"></i> Add Assay
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="card bg-white bg-opacity-10 text-white">
+                    <div class="card-body">
+                        <h4 class="mb-2">{{ assays|length }}</h4>
+                        <p class="mb-0">Total Assays</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Experiment Summary Section -->
+<div class="container mt-5">
+    <div class="row g-4">
+        <!-- Key Metrics -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Experiment Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-calendar-event text-primary" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Duration</h6>
+                                    <p class="mb-0 text-muted">
+                                        {% if experiment.duration_days %}
+                                            {{ experiment.duration_days }} days
+                                        {% elif experiment.end_date %}
+                                            {{ (experiment.end_date - experiment.start_date).days }} days
+                                        {% else %}
+                                            Ongoing
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-success bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-clipboard-check text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Study Design</h6>
+                                    <p class="mb-0 text-muted">{{ experiment.study_design or 'Not specified' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-info bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-people text-info" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Sample Size</h6>
+                                    <p class="mb-0 text-muted">{{ experiment.sample_size or 'Not specified' }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-shield-check text-warning" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Quality Control</h6>
+                                    <p class="mb-0 text-muted">
+                                        {% set passed_assays = assays | selectattr('quality_control_passed', 'equalto', true) | list %}
+                                        {{ passed_assays|length }}/{{ assays|length }} passed
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if experiment.primary_endpoint %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Primary Endpoint</h6>
+                            <p class="text-muted">{{ experiment.primary_endpoint }}</p>
+                        </div>
+                        {% if experiment.secondary_endpoints %}
+                        <div class="col-md-6">
+                            <h6>Secondary Endpoints</h6>
+                            <p class="text-muted">{{ experiment.secondary_endpoints }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Animal Profile -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bug me-2"></i>Animal Profile
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="bg-primary bg-opacity-10 p-4 rounded-circle d-inline-block">
+                            <i class="bi bi-bug text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h5 class="mb-1">{{ experiment.animal.species.common_name }}</h5>
+                        <code class="text-muted">{{ experiment.animal.accession_number }}</code>
+                    </div>
+                    
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <small class="text-muted">Strain</small>
+                            <p class="mb-2">{{ experiment.animal.strain or 'N/A' }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Sex</small>
+                            <p class="mb-2">{{ experiment.animal.sex or 'N/A' }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Age</small>
+                            <p class="mb-2">{{ experiment.animal.age_at_start or 'N/A' }} weeks</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Weight</small>
+                            <p class="mb-2">{{ experiment.animal.weight_at_start or 'N/A' }} g</p>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('animal_detail', animal_id=experiment.animal.id) }}" 
+                       class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-eye"></i> View Full Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Insights Section -->
+<div class="container mt-5">
+    <div class="row g-4">
+        <!-- Assay Overview -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-data me-2"></i>Assay Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if assays %}
+                    <div class="text-center mb-4">
+                        <canvas id="assayTypeChart" width="300" height="200"></canvas>
+                    </div>
+                    
+                    <div class="row g-3">
+                        {% for assay_type, count in assay_type_counts.items() %}
+                        <div class="col-6">
+                            <div class="d-flex align-items-center p-2 bg-light rounded">
+                                <div class="bg-primary bg-opacity-10 p-2 rounded me-2">
+                                    <i class="bi bi-clipboard-check text-primary"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted">{{ assay_type }}</small>
+                                    <p class="mb-0 fw-bold">{{ count }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clipboard-data text-muted" style="font-size: 3rem;"></i>
+                        <h6 class="text-muted mt-3">No assays recorded</h6>
+                        <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" class="btn btn-primary btn-sm">
+                            Add First Assay
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Measurement Insights -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Measurement Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if measurement_insights %}
+                    <div class="text-center mb-4">
+                        <canvas id="measurementChart" width="300" height="200"></canvas>
+                    </div>
+                    
+                    <div class="row g-3">
+                        {% for insight in measurement_insights[:4] %}
+                        <div class="col-6">
+                            <div class="d-flex align-items-center p-2 bg-light rounded">
+                                <div class="bg-success bg-opacity-10 p-2 rounded me-2">
+                                    <i class="bi bi-arrow-up text-success"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted">{{ insight.parameter }}</small>
+                                    <p class="mb-0 fw-bold">{{ insight.value }} {{ insight.unit }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-graph-up text-muted" style="font-size: 3rem;"></i>
+                        <h6 class="text-muted mt-3">No measurements available</h6>
+                        <p class="text-muted small">Add assays and measurements to see insights</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Representative Images Section -->
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-images me-2"></i>Representative Images & Data
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if data_files %}
+            <div class="row g-4">
+                {% for file in data_files %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100">
+                        {% if file.file_type == 'Image' %}
+                        <img src="{{ url_for('static', filename='uploads/' + file.filename) }}" 
+                             class="card-img-top" alt="{{ file.description or file.filename }}"
+                             style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                             style="height: 200px;">
+                            <i class="bi bi-file-earmark-text text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h6 class="card-title">{{ file.filename }}</h6>
+                            <p class="card-text small text-muted">{{ file.description or 'No description' }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ file.file_type }}</small>
+                                <small class="text-muted">{{ (file.file_size / 1024) | round(1) }} KB</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-images text-muted" style="font-size: 3rem;"></i>
+                <h6 class="text-muted mt-3">No representative images or data files</h6>
+                <p class="text-muted">Upload images, charts, or data files to showcase experimental results</p>
+                <button class="btn btn-outline-primary" onclick="alert('File upload feature coming soon!')">
+                    <i class="bi bi-upload"></i> Upload Files
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Timeline Section -->
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-clock-history me-2"></i>Experiment Timeline
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-primary"></div>
+                    <div class="timeline-content">
+                        <h6>Experiment Started</h6>
+                        <p class="text-muted">{{ experiment.start_date.strftime('%B %d, %Y') }}</p>
+                    </div>
+                </div>
+                
+                {% for assay in assays %}
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-success"></div>
+                    <div class="timeline-content">
+                        <h6>{{ assay.assay_type.name }}</h6>
+                        <p class="text-muted">
+                            {{ assay.timepoint or 'No timepoint' }}
+                            {% if assay.operator %} • {{ assay.operator }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if experiment.end_date %}
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-warning"></div>
+                    <div class="timeline-content">
+                        <h6>Experiment Completed</h6>
+                        <p class="text-muted">{{ experiment.end_date.strftime('%B %d, %Y') }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="container mt-5 mb-5">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" class="btn btn-primary w-100">
+                <i class="bi bi-plus-circle"></i> Add Assay
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('experiment_detail', experiment_id=experiment.id) }}" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-eye"></i> Detailed View
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('experiments') }}" class="btn btn-outline-info w-100">
+                <i class="bi bi-arrow-left"></i> Back to Experiments
+            </a>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-outline-success w-100" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print Profile
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-left: 20px;
+}
+
+@media print {
+    .hero-section {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .btn {
+        display: none !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Assay Type Chart
+    const assayTypeCtx = document.getElementById('assayTypeChart');
+    if (assayTypeCtx && {{ assay_type_counts|tojson }}) {
+        const assayData = {{ assay_type_counts|tojson }};
+        new Chart(assayTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(assayData),
+                datasets: [{
+                    data: Object.values(assayData),
+                    backgroundColor: [
+                        '#0d6efd',
+                        '#198754',
+                        '#ffc107',
+                        '#dc3545',
+                        '#6c757d'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Measurement Chart
+    const measurementCtx = document.getElementById('measurementChart');
+    if (measurementCtx && {{ measurement_insights|tojson }}) {
+        const measurementData = {{ measurement_insights|tojson }};
+        const labels = measurementData.map(item => item.parameter);
+        const values = measurementData.map(item => item.value);
+        
+        new Chart(measurementCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Values',
+                    data: values,
+                    backgroundColor: 'rgba(13, 110, 253, 0.8)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

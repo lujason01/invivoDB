@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Species Profiles - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4 d-flex flex-column min-vh-100">
+    <h2 class="mb-4"><i class="bi bi-bug"></i> Species Profiles</h2>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 flex-grow-1 mb-5">
+        {% for species in species_list %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <img src="{{ url_for('static', filename='images/' + (species.common_name|lower|replace(' ', '') + '.jpg')) }}" class="card-img-top" alt="{{ species.common_name }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/invivodb-best-image.png') }}';">
+                <div class="card-body">
+                    <h4 class="card-title">{{ species.common_name }}</h4>
+                    <h6 class="card-subtitle mb-2 text-muted"><em>{{ species.scientific_name }}</em></h6>
+                    <p class="card-text fw-semibold text-primary">{{ species.description or 'No description available.' }}</p>
+                    <p class="mb-2"><span class="badge bg-secondary"><i class="bi bi-journal-medical me-1"></i> PubMed Studies:</span> <span class="fw-bold">{{ species.pubmed_count or '?' }}</span></p>
+                    <div class="mt-2">
+                        {% set hashtags = species_hashtags.get(species.scientific_name, []) %}
+                        {% for tag in hashtags %}
+                        <span class="badge bg-info text-dark me-1">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.card-img-top {
+    object-fit: cover;
+    height: 220px;
+    width: 100%;
+}
+.container.min-vh-100 {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+.row.flex-grow-1 {
+    flex-grow: 1;
+}
+</style>
+{% endblock %} 

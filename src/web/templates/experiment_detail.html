@@ -13,9 +13,14 @@
                         <h4 class="mb-0">
                             <i class="bi bi-flask"></i> {{ experiment.title }}
                         </h4>
-                        <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-plus-circle"></i> Add Assay
-                        </a>
+                        <div class="btn-group">
+                            <a href="{{ url_for('experiment_profile', experiment_id=experiment.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-graph-up"></i> Profile View
+                            </a>
+                            <a href="{{ url_for('add_assay', experiment_id=experiment.id) }}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> Add Assay
+                            </a>
+                        </div>
                     </div>
                     <p class="text-muted mb-0">
                         Animal: <code>{{ experiment.animal.accession_number }}</code> 
