@@ -23,8 +23,7 @@ api = Api(
     version='1.0',
     title='InvivoDB REST API',
     description='A REST API for managing in vivo experimental data for digital animal twins',
-    doc='/docs/',
-    prefix='/api/v1'
+    doc='/docs/'
 )
 
 # Add namespaces

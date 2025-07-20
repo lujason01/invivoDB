@@ -12,11 +12,11 @@ from flask import request, current_app
 from flask_restx import Namespace, Resource, fields
 from sqlalchemy.exc import IntegrityError
 from models.database import Species, db
-from models.schemas import (
-    SpeciesCreate, SpeciesUpdate, Species as SpeciesSchema,
-    PaginationParams, PaginatedResponse
-)
-from pydantic import ValidationError
+# from models.schemas import (
+#     SpeciesCreate, SpeciesUpdate, Species as SpeciesSchema,
+#     PaginationParams, PaginatedResponse
+# )
+# from pydantic import ValidationError
 
 # Create namespace
 api = Namespace('species', description='Species management operations')
@@ -105,24 +105,24 @@ class SpeciesListAPI(Resource):
     def post(self):
         """Create a new species"""
         try:
-            # Validate input data
-            species_data = SpeciesCreate(**request.json)
+            # Get data from request
+            data = request.json or {}
             
             # Check if species already exists
             existing = Species.query.filter(
-                (Species.scientific_name == species_data.scientific_name) |
-                (Species.common_name == species_data.common_name)
+                (Species.scientific_name == data.get('scientific_name')) |
+                (Species.common_name == data.get('common_name'))
             ).first()
             
             if existing:
-                api.abort(409, f'Species with name "{species_data.common_name}" or scientific name "{species_data.scientific_name}" already exists')
+                api.abort(409, f'Species with name "{data.get("common_name")}" or scientific name "{data.get("scientific_name")}" already exists')
             
             # Create new species
             species = Species(
-                common_name=species_data.common_name,
-                scientific_name=species_data.scientific_name,
-                taxonomy_id=species_data.taxonomy_id,
-                description=getattr(species_data, 'description', None)
+                common_name=data.get('common_name'),
+                scientific_name=data.get('scientific_name'),
+                taxonomy_id=data.get('taxonomy_id'),
+                description=data.get('description')
             )
             
             db.session.add(species)
@@ -130,8 +130,6 @@ class SpeciesListAPI(Resource):
             
             return species_to_dict(species), 201
             
-        except ValidationError as e:
-            api.abort(400, f'Validation error: {e}')
         except IntegrityError as e:
             db.session.rollback()
             api.abort(409, f'Database constraint error: {str(e)}')
@@ -164,19 +162,16 @@ class SpeciesAPI(Resource):
             api.abort(404, f'Species with ID {species_id} not found')
         
         try:
-            # Validate input data
-            update_data = SpeciesUpdate(**request.json)
+            # Get update data
+            data = request.json or {}
             
             # Update only provided fields
-            for field, value in update_data.dict(exclude_unset=True).items():
-                if hasattr(species, field):
-                    setattr(species, field, value)
+            for field in ['common_name', 'scientific_name', 'taxonomy_id', 'description']:
+                if field in data:
+                    setattr(species, field, data[field])
             
             db.session.commit()
             return species_to_dict(species)
-            
-        except ValidationError as e:
-            api.abort(400, f'Validation error: {e}')
         except IntegrityError as e:
             db.session.rollback()
             api.abort(409, f'Database constraint error: {str(e)}')
