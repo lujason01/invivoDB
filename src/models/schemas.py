@@ -8,7 +8,7 @@ automatic API documentation.
 
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 import re
 
@@ -84,7 +84,8 @@ class AnimalBase(BaseSchema):
 class AnimalCreate(AnimalBase):
     accession_number: Optional[str] = Field(None, max_length=15, description="Auto-generated if not provided")
     
-    @validator('accession_number')
+    @field_validator('accession_number')
+    @classmethod
     def validate_accession_number(cls, v):
         if v:
             # Import the validation function from database module

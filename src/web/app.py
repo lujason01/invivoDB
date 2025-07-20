@@ -22,9 +22,12 @@ from models.database import (
     validate_accession_number, parse_accession_number
 )
 
+# Import API
+from api.main import init_api
+
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+app.config['SECRET_KEY'] = 'mydb-secret-key-change-in-production'
 
 # Database configuration - using SQLite for the prototype
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///invivodb.db'
@@ -32,6 +35,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy
 db.init_app(app)
+
+# Initialize REST API
+api = init_api(app, db)
 
 # Configure the database to use our models
 with app.app_context():
