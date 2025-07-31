@@ -26,5 +26,5 @@ flask-restx==1.1.0
 python-dateutil==2.8.2
 
 # Biomedical data APIs and processing
-biopython==1.85
+biopython>=1.83,<2.0
 
