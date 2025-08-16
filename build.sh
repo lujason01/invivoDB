@@ -2,7 +2,7 @@
 set -o errexit
 
 # Install Python dependencies (production only)
-pip install --no-cache-dir --prefer-binary -r requirements-prod.txt
+pip install --no-cache-dir --prefer-binary --only-binary=all -r requirements-render.txt
 
 # Create instance directory if it doesn't exist
 mkdir -p src/instance
