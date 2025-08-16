@@ -1,8 +1,8 @@
 #!/bin/bash
 set -o errexit
 
-# Install Python dependencies
-pip install -r requirements.txt
+# Install Python dependencies (production only)
+pip install --no-cache-dir --prefer-binary -r requirements-prod.txt
 
 # Create instance directory if it doesn't exist
 mkdir -p src/instance

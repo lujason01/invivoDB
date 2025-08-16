@@ -8,23 +8,26 @@ SQLAlchemy==2.0.21
 # Data validation and serialization
 pydantic==2.4.2
 
-# Development and testing
-pytest==7.4.2
-pytest-flask==1.2.0
-pylint==3.0.3
+# Development and testing (only for local development)
+# pytest==7.4.2
+# pytest-flask==1.2.0
+# pylint==3.0.3
 
-# Optional: For production deployment
+# Production deployment
 gunicorn==21.2.0
 
-# Optional: For database migrations
+# Database migrations
 Flask-Migrate==4.0.5
 
-# Optional: For API documentation
+# API documentation
 flask-restx==1.1.0
 
-# Optional: For enhanced datetime handling
+# Enhanced datetime handling
 python-dateutil==2.8.2
 
-# Biomedical data APIs and processing
-biopython>=1.83,<2.0
+# Biomedical data APIs and processing (use pre-compiled version)
+biopython==1.83
+
+# Additional production dependencies
+Werkzeug==2.3.7
 
