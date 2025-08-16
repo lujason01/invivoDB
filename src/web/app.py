@@ -24,11 +24,20 @@ from models.database import (
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+
+# Configuration
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Database configuration - using SQLite for the prototype
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///invivodb.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///invivodb.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Production settings
+if os.environ.get('FLASK_ENV') == 'production':
+    app.config['DEBUG'] = False
+    app.config['TESTING'] = False
+else:
+    app.config['DEBUG'] = True
 
 # Initialize SQLAlchemy
 db.init_app(app)

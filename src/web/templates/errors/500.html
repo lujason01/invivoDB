@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <div class="error-content">
+                    <h1 class="error-code">500</h1>
+                    <h2 class="error-message">Internal Server Error</h2>
+                    <p class="error-description">
+                        Something went wrong on our server. We're working to fix the issue.
+                        Please try again in a few minutes.
+                    </p>
+                    <div class="error-actions">
+                        <a href="{{ url_for('landing') }}" class="btn btn-primary">
+                            <i class="fas fa-home"></i> Go Home
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Go Back
+                        </a>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-dashboard"></i> Dashboard
+                        </a>
+                    </div>
+                    
+                    <div class="error-help mt-4">
+                        <p class="small text-muted">
+                            If this problem persists, please contact the system administrator.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    padding: 60px 0;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+}
+
+.error-content {
+    padding: 40px;
+}
+
+.error-code {
+    font-size: 8rem;
+    font-weight: bold;
+    color: #dc3545;
+    margin-bottom: 0;
+    line-height: 1;
+}
+
+.error-message {
+    font-size: 2.5rem;
+    color: #343a40;
+    margin-bottom: 20px;
+}
+
+.error-description {
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin-bottom: 40px;
+}
+
+.error-actions .btn {
+    margin: 5px;
+    padding: 12px 24px;
+}
+
+.error-help {
+    border-top: 1px solid #dee2e6;
+    padding-top: 20px;
+}
+</style>
+{% endblock %}
