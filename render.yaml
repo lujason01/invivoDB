@@ -1,8 +1,9 @@
 services:
   - type: web
     name: invivodb-web
-    env: python
-    buildCommand: pip install -r requirements.txt
+    runtime: python
+    buildCommand: |
+      pip install --no-cache-dir --prefer-binary -r requirements-prod.txt
     startCommand: cd src/web && gunicorn --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: DATABASE_URL
@@ -13,6 +14,10 @@ services:
         value: production
       - key: FLASK_APP
         value: src/web/app.py
+      - key: PIP_NO_CACHE_DIR
+        value: "1"
+      - key: PIP_PREFER_BINARY
+        value: "1"
     disk:
       name: invivodb-disk
       mountPath: /opt/render/project/src/instance
