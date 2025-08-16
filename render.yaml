@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: invivodb-web
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd src/web && gunicorn --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///instance/invivodb.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: src/web/app.py
+    disk:
+      name: invivodb-disk
+      mountPath: /opt/render/project/src/instance
+      sizeGB: 1
