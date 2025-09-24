@@ -8,11 +8,6 @@ SQLAlchemy==2.0.23
 # Data validation and serialization (using v1 to avoid Rust compilation)
 pydantic==1.10.13
 
-# Development and testing (only for local development)
-# pytest==7.4.2
-# pytest-flask==1.2.0
-# pylint==3.0.3
-
 # Production deployment
 gunicorn==21.2.0
 
@@ -25,6 +20,6 @@ python-dateutil==2.8.2
 # Additional production dependencies
 Werkzeug==3.0.1
 
-# Note: biopython removed to avoid Rust/C++ compilation issues
-# Install separately if needed: pip install biopython
+# Note: biopython and Flask-Migrate removed to avoid compilation issues
+# Install separately if needed: pip install biopython Flask-Migrate
 
