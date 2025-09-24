@@ -2,8 +2,7 @@
 """
 WSGI Entry Point for InvivoDB
 
-This file serves as the entry point for WSGI servers.
-Note: With current Procfile setup, this file is not actively used.
+This is the main WSGI entry point that Render/Gunicorn will use.
 """
 
 import sys
@@ -13,13 +12,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 # Import the Flask app
-try:
-    from web.app import app
-except ImportError as e:
-    print(f"Import error: {e}")
-    # Fallback for different path structures
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src', 'web'))
-    from app import app
+from web.app import app
 
+# This is what Gunicorn looks for
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=False)
