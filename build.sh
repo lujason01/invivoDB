@@ -2,7 +2,8 @@
 set -o errexit
 
 # Install Python dependencies
-pip install --no-cache-dir -r requirements.txt
+pip install --upgrade pip setuptools wheel
+pip install --no-cache-dir --prefer-binary --only-binary=:all: -r requirements.txt || pip install --no-cache-dir -r requirements.txt
 
 # Create instance directory if it doesn't exist
 mkdir -p src/instance

@@ -831,5 +831,12 @@ if __name__ == '__main__':
         db.create_all()
         init_sample_data()
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get port from environment variable (for cloud deployment) or default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    # Get host from environment variable or default to 0.0.0.0
+    host = os.environ.get('HOST', '0.0.0.0')
+    # Debug mode should be off in production
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(debug=debug_mode, host=host, port=port)
 
