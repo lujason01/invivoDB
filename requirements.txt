@@ -1,12 +1,12 @@
 # Core framework
-Flask==3.0.0
+Flask==3.0.3
 Flask-SQLAlchemy==3.1.1
 
 # Database
 SQLAlchemy==2.0.23
 
-# Data validation and serialization (use newer versions with pre-compiled wheels)
-pydantic==2.5.0
+# Data validation and serialization (using stable version with wheels)
+pydantic==2.4.2
 
 # Development and testing (only for local development)
 # pytest==7.4.2

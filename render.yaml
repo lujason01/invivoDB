@@ -3,7 +3,8 @@ services:
     name: invivodb-web
     runtime: python
     buildCommand: |
-      pip install --no-cache-dir -r requirements.txt
+      pip install --upgrade pip setuptools wheel
+      pip install --no-cache-dir --prefer-binary --only-binary=:all: -r requirements.txt || pip install --no-cache-dir -r requirements.txt
       cd src/web && python -c "from app import app, db; app.app_context().push(); db.create_all()"
     startCommand: cd src/web && gunicorn --bind 0.0.0.0:$PORT app:app
     envVars:
