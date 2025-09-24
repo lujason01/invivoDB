@@ -782,48 +782,57 @@ def internal_error(error):
 # Initialize sample data
 def init_sample_data():
     """Initialize the database with sample data for demonstration"""
-    if Species.query.count() == 0:
-        # Add sample species
-        mouse = Species(common_name="Mouse", scientific_name="Mus musculus", taxonomy_id="10090")
-        rat = Species(common_name="Rat", scientific_name="Rattus norvegicus", taxonomy_id="10116")
-        
-        db.session.add(mouse)
-        db.session.add(rat)
-        
-        # Add sample therapy categories
-        gene_therapy = TherapyCategory(
-            name="Gene Therapy",
-            description="Therapeutic delivery of genetic material",
-            mechanism_of_action="Gene expression modulation"
-        )
-        immunotherapy = TherapyCategory(
-            name="Immunotherapy",
-            description="Treatments that use the immune system",
-            mechanism_of_action="Immune system enhancement"
-        )
-        
-        db.session.add(gene_therapy)
-        db.session.add(immunotherapy)
-        
-        # Add sample assay types
-        blood_chemistry = AssayType(
-            name="Blood Chemistry",
-            category="Biochemical",
-            description="Blood chemistry analysis",
-            units="Various"
-        )
-        histology = AssayType(
-            name="Histology",
-            category="Morphological",
-            description="Tissue histological examination",
-            units="Qualitative"
-        )
-        
-        db.session.add(blood_chemistry)
-        db.session.add(histology)
-        
-        db.session.commit()
-        print("Sample data initialized!")
+    try:
+        if Species.query.count() == 0:
+            print("Initializing sample data...")
+            
+            # Add sample species
+            mouse = Species(common_name="Mouse", scientific_name="Mus musculus", taxonomy_id="10090")
+            rat = Species(common_name="Rat", scientific_name="Rattus norvegicus", taxonomy_id="10116")
+            
+            db.session.add(mouse)
+            db.session.add(rat)
+            
+            # Add sample therapy categories
+            gene_therapy = TherapyCategory(
+                name="Gene Therapy",
+                description="Therapeutic delivery of genetic material",
+                mechanism_of_action="Gene expression modulation"
+            )
+            immunotherapy = TherapyCategory(
+                name="Immunotherapy",
+                description="Treatments that use the immune system",
+                mechanism_of_action="Immune system enhancement"
+            )
+            
+            db.session.add(gene_therapy)
+            db.session.add(immunotherapy)
+            
+            # Add sample assay types
+            blood_chemistry = AssayType(
+                name="Blood Chemistry",
+                category="Biochemical",
+                description="Blood chemistry analysis",
+                units="Various"
+            )
+            histology = AssayType(
+                name="Histology",
+                category="Morphological",
+                description="Tissue histological examination",
+                units="Qualitative"
+            )
+            
+            db.session.add(blood_chemistry)
+            db.session.add(histology)
+            
+            db.session.commit()
+            print("Sample data initialized successfully!")
+        else:
+            print("Database already contains data - skipping sample data initialization")
+    except Exception as e:
+        print(f"Warning: Could not initialize sample data: {e}")
+        print("App will continue to run with empty database")
+        db.session.rollback()
 
 
 if __name__ == '__main__':
@@ -831,5 +840,12 @@ if __name__ == '__main__':
         db.create_all()
         init_sample_data()
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get port from environment variable (for cloud deployment) or default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    # Get host from environment variable or default to 0.0.0.0
+    host = os.environ.get('HOST', '0.0.0.0')
+    # Debug mode should be off in production
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(debug=debug_mode, host=host, port=port)
 
