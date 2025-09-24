@@ -1,8 +1,8 @@
 #!/bin/bash
 set -o errexit
 
-# Install Python dependencies (production only)
-pip install --no-cache-dir --prefer-binary --only-binary=all -r requirements-render.txt
+# Install Python dependencies
+pip install --no-cache-dir -r requirements.txt
 
 # Create instance directory if it doesn't exist
 mkdir -p src/instance
@@ -11,10 +11,15 @@ mkdir -p src/web/instance
 # Initialize database (if needed)
 cd src/web
 python -c "
-from app import app, db, init_sample_data
+from app import app, db
 with app.app_context():
     db.create_all()
-    init_sample_data()
+    try:
+        from app import init_sample_data
+        init_sample_data()
+        print('Sample data initialized')
+    except ImportError:
+        print('No sample data initialization function found')
 "
 
 echo "Build completed successfully!"
