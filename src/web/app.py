@@ -10,6 +10,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
+import datetime as dt
 import os
 import sys
 
@@ -73,7 +74,7 @@ def dashboard():
         species_breakdown = {name: count for name, count in species_data}
         
         # Get recent experiments (last 30 days)
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(dt.UTC) - timedelta(days=30)
         recent_experiments = Experiment.query.filter(Experiment.created_at >= thirty_days_ago).count()
         
         # Get recent experiments for display

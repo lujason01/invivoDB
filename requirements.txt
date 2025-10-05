@@ -20,6 +20,9 @@ python-dateutil==2.8.2
 # Additional production dependencies
 Werkzeug==3.0.1
 
-# Note: biopython and Flask-Migrate removed to avoid compilation issues
-# Install separately if needed: pip install biopython Flask-Migrate
+# Database migrations
+Flask-Migrate==4.0.7
+
+# Note: biopython removed to avoid compilation issues
+# Install separately if needed: pip install biopython
 
