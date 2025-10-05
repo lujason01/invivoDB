@@ -13,7 +13,7 @@
                 <div class="card-body">
                     <h4 class="card-title">{{ species.common_name }}</h4>
                     <h6 class="card-subtitle mb-2 text-muted"><em>{{ species.scientific_name }}</em></h6>
-                    <p class="card-text fw-semibold text-primary">{{ species.description or 'No description available.' }}</p>
+                    <p class="card-text fw-semibold text-primary">{{ species.description or 'Description not available.' }}</p>
                     <p class="mb-2"><span class="badge bg-secondary"><i class="bi bi-journal-medical me-1"></i> PubMed Studies:</span> <span class="fw-bold">{{ species.pubmed_count or '?' }}</span></p>
                     <div class="mt-2">
                         {% set hashtags = species_hashtags.get(species.scientific_name, []) %}

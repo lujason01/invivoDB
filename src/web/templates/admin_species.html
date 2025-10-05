@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Species Management - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-gear-fill text-warning"></i> Species Management</h2>
+        <a href="{{ url_for('species_profiles') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Species
+        </a>
+    </div>
+    
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle"></i>
+        <strong>Admin Panel:</strong> Use this interface to edit species descriptions. Changes will be reflected immediately on the public Species page.
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> All Species</h5>
+        </div>
+        <div class="card-body">
+            {% if species_list %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Common Name</th>
+                            <th>Scientific Name</th>
+                            <th>Description Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for species in species_list %}
+                        <tr>
+                            <td>
+                                <strong>{{ species.common_name }}</strong>
+                            </td>
+                            <td>
+                                <em>{{ species.scientific_name }}</em>
+                            </td>
+                            <td>
+                                {% if species.description %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Has Description
+                                    </span>
+                                    <small class="text-muted d-block mt-1">
+                                        {{ species.description[:100] }}{% if species.description|length > 100 %}...{% endif %}
+                                    </small>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-exclamation-circle"></i> No Description
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('edit_species_description', species_id=species.id) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-inbox display-4 text-muted"></i>
+                <p class="mt-3 text-muted">No species found in the database.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}
