@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login - invivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Admin Access Required
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Enter the admin password to access administrative functions.
+                    </p>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Admin Password</label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   required 
+                                   autocomplete="current-password"
+                                   placeholder="Enter admin password">
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                Login
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr>
+                    <div class="text-center">
+                        <a href="{{ url_for('landing') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            Back to Main Site
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer bg-light text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Admin access is logged and monitored for security purposes.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Focus on password field when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('password').focus();
+});
+
+// Clear form on browser back button
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        document.getElementById('password').value = '';
+    }
+});
+</script>
+{% endblock %}
