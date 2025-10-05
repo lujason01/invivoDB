@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ species.common_name }} Description - InvivoDB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-pencil-square"></i> Edit Species Description</h2>
+                <a href="{{ url_for('admin_species') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Admin
+                </a>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {{ species.common_name }} 
+                        <small class="text-muted">(<em>{{ species.scientific_name }}</em>)</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-4">
+                            <label for="description" class="form-label">
+                                <strong>Description</strong>
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="description" 
+                                name="description" 
+                                rows="8" 
+                                placeholder="Enter a detailed description for {{ species.common_name }}..."
+                            >{{ species.description or '' }}</textarea>
+                            <div class="form-text">
+                                Provide a comprehensive description including scientific classification, characteristics, 
+                                and relevance to research. This will be displayed on the public species page.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('admin_species') }}" class="btn btn-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Preview Section -->
+            {% if species.description %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-eye"></i> Current Description Preview</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted">{{ species.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add character counter
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('description');
+    const maxLength = 2000; // Optional max length
+    
+    // Create character counter
+    const counter = document.createElement('div');
+    counter.className = 'form-text text-end';
+    counter.id = 'char-counter';
+    textarea.parentNode.appendChild(counter);
+    
+    function updateCounter() {
+        const length = textarea.value.length;
+        counter.textContent = `${length} characters`;
+        
+        if (length > maxLength) {
+            counter.className = 'form-text text-end text-danger';
+        } else {
+            counter.className = 'form-text text-end';
+        }
+    }
+    
+    textarea.addEventListener('input', updateCounter);
+    updateCounter(); // Initial call
+});
+</script>
+{% endblock %}

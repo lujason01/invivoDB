@@ -8,6 +8,7 @@ in vivo experimental data.
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from datetime import datetime, timedelta
 import os
 import sys
@@ -41,6 +42,9 @@ else:
 
 # Initialize SQLAlchemy
 db.init_app(app)
+
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 # Configure the database to use our models
 with app.app_context():
@@ -754,7 +758,8 @@ def species_profiles():
         'Canis lupus familiaris': 63013,
         'Mesocricetus auratus': 1716,
     }
-    species_descriptions = {
+    # Now using database descriptions with fallback for species without descriptions
+    fallback_descriptions = {
         'Mus musculus': 'The house mouse is the most widely used mammalian model organism in biomedical research, genetics, and physiology.',
         'Rattus norvegicus': 'The laboratory rat is a key model for physiology, pharmacology, and behavioral studies.',
         'Macaca mulatta': 'The rhesus macaque is a nonhuman primate model important for neuroscience, immunology, and infectious disease research.',
@@ -763,8 +768,39 @@ def species_profiles():
     }
     for s in species_list:
         s.pubmed_count = pubmed_counts.get(s.scientific_name, '?')
-        s.description = species_descriptions.get(s.scientific_name, s.description or '')
-    return render_template('species_profiles.html', species_list=species_list, species_hashtags=species_hashtags)
+        # Use database description or fallback to hardcoded
+        if not s.description:
+            s.description = fallback_descriptions.get(s.scientific_name, 'Description not available')
+    return render_template('species_profiles.html', 
+                         species_list=species_list,
+                         species_hashtags=species_hashtags)
+
+
+@app.route('/admin/species')
+def admin_species():
+    """Admin interface for managing species descriptions"""
+    species_list = Species.query.order_by(Species.common_name).all()
+    return render_template('admin_species.html', species_list=species_list)
+
+
+@app.route('/admin/species/<int:species_id>/edit', methods=['GET', 'POST'])
+def edit_species_description(species_id):
+    """Edit a specific species description"""
+    species = Species.query.get_or_404(species_id)
+    
+    if request.method == 'POST':
+        new_description = request.form.get('description', '').strip()
+        species.description = new_description if new_description else None
+        
+        try:
+            db.session.commit()
+            flash(f'Description for {species.common_name} updated successfully!', 'success')
+            return redirect(url_for('admin_species'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating description: {str(e)}', 'error')
+    
+    return render_template('edit_species_description.html', species=species)
 
 
 # Error handlers
