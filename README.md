@@ -112,8 +112,7 @@ This project welcomes contributions from the life sciences and software developm
 
 Open source project - contributors welcome to showcase this work in their portfolios.
 
----
+---  
 
-*Building standardized, reusable datasets for drug discovery and digital twin modeling*
-
-Cheers from the **invivoDB Team**
+Cheers from the **invivoDB Team**  
+*Building standardized, reusable datasets for drug discovery and digital twin modeling*  
