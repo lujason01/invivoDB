@@ -6,12 +6,15 @@ Provides a user-friendly interface for browsing and managing
 in vivo experimental data.
 """
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
+import datetime as dt
 import os
 import sys
+from functools import wraps
+import hashlib
 
 # Add the parent directory to the path so we can import our models
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -52,6 +55,38 @@ with app.app_context():
     db.create_all()
 
 
+# Admin authentication functions
+def verify_admin_password(password):
+    """Verify admin password against environment variable hash"""
+    # Get the stored password hash from environment
+    stored_hash = os.environ.get('ADMIN_PASSWORD_HASH')
+    
+    if not stored_hash:
+        # Fallback for development - NOT for production
+        if os.environ.get('FLASK_ENV') != 'production':
+            dev_password = os.environ.get('ADMIN_PASSWORD', 'invivo_admin_2025')
+            return password == dev_password
+        else:
+            # Production requires ADMIN_PASSWORD_HASH to be set
+            return False
+    
+    # Hash the provided password and compare
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    return password_hash == stored_hash
+
+
+# Admin authentication decorator
+def admin_required(f):
+    """Decorator to require admin authentication for routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_logged_in' not in session:
+            flash('Admin access required. Please log in.', 'warning')
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @app.route('/')
 def landing():
     """Application landing page with a prominent search bar."""
@@ -73,7 +108,7 @@ def dashboard():
         species_breakdown = {name: count for name, count in species_data}
         
         # Get recent experiments (last 30 days)
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(dt.UTC) - timedelta(days=30)
         recent_experiments = Experiment.query.filter(Experiment.created_at >= thirty_days_ago).count()
         
         # Get recent experiments for display
@@ -776,7 +811,38 @@ def species_profiles():
                          species_hashtags=species_hashtags)
 
 
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """Admin login page with secure password verification"""
+    if request.method == 'POST':
+        password = request.form.get('password', '').strip()
+        
+        if not password:
+            flash('Password is required.', 'error')
+        elif verify_admin_password(password):
+            session['admin_logged_in'] = True
+            session.permanent = True  # Make session persistent
+            flash('Admin login successful!', 'success')
+            
+            # Redirect to intended page or default to admin species
+            next_page = request.args.get('next')
+            return redirect(next_page if next_page else url_for('admin_species'))
+        else:
+            flash('Invalid password. Access denied.', 'error')
+    
+    return render_template('admin_login.html')
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Admin logout - clear session"""
+    session.pop('admin_logged_in', None)
+    flash('Logged out successfully.', 'info')
+    return redirect(url_for('landing'))
+
+
 @app.route('/admin/species')
+@admin_required
 def admin_species():
     """Admin interface for managing species descriptions"""
     species_list = Species.query.order_by(Species.common_name).all()
@@ -784,6 +850,7 @@ def admin_species():
 
 
 @app.route('/admin/species/<int:species_id>/edit', methods=['GET', 'POST'])
+@admin_required
 def edit_species_description(species_id):
     """Edit a specific species description"""
     species = Species.query.get_or_404(species_id)

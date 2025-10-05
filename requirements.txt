@@ -20,6 +20,26 @@ python-dateutil==2.8.2
 # Additional production dependencies
 Werkzeug==3.0.1
 
-# Note: biopython and Flask-Migrate removed to avoid compilation issues
-# Install separately if needed: pip install biopython Flask-Migrate
+# Database migrations
+Flask-Migrate==4.0.7
+
+# Authentication and Security
+# Note: Admin authentication uses standard library modules:
+# - hashlib (password hashing)
+# - functools (decorators)
+# - os (environment variables)
+# - Flask's built-in session management
+
+# Optional security enhancements (not required but recommended for production)
+# cryptography==41.0.7  # For advanced encryption if needed
+# PyJWT==2.8.0         # For JWT tokens if implementing API authentication
+
+# Development and Testing (only if you want to)
+# pytest==7.4.3        # For running tests
+# pytest-flask==1.3.0  # Flask testing utilities
+# black==23.12.1       # Code formatting
+# flake8==6.1.0        # Code linting
+
+# Note: biopython removed to avoid compilation issues
+# Install separately if needed: pip install biopython
 
