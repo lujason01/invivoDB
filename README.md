@@ -1,6 +1,7 @@
 # invivoDB: Curated Database for In Vivo Experimental Data
 
 ![](images/mousemovie1.gif.gif)
+*Created with MeshyAI and edited with Canva.com*  
 
 A Flask-based web application for managing and analyzing in vivo experimental data, designed to support drug discovery and digital twin modeling in life sciences research.
 
