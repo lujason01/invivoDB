@@ -28,7 +28,7 @@ InvivoDB provides a standardized platform for cataloging experimental animal dat
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/lujason01/invivoDB.git  
 cd invivoDB
 
 # Install dependencies
